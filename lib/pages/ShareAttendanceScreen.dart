@@ -28,6 +28,16 @@ class _ShareAttendanceScreenState extends State<ShareAttendanceScreen> {
         Map<dynamic, dynamic> studentsMap = event.snapshot.value as Map<dynamic, dynamic>;
         List<String> updatedStudents = studentsMap.values.map((e) => e['entry'].toString()).toList();
 
+        // Sort in ascending order (numeric if possible, otherwise alphabetic)
+        updatedStudents.sort((a, b) {
+          final aNum = int.tryParse(a);
+          final bNum = int.tryParse(b);
+          if (aNum != null && bNum != null) {
+            return aNum.compareTo(bNum);
+          }
+          return a.compareTo(b);
+        });
+
         setState(() {
           markedStudents = updatedStudents;
         });
