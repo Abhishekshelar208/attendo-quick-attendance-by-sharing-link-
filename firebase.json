@@ -1,0 +1,55 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "attendo-312ea",
+          "appId": "1:414422473305:android:d042f039ee277ba1ed2f48",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "attendo-312ea",
+          "appId": "1:414422473305:ios:b5f531f526b3d184ed2f48",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "macos": {
+        "default": {
+          "projectId": "attendo-312ea",
+          "appId": "1:414422473305:ios:b5f531f526b3d184ed2f48",
+          "uploadDebugSymbols": false,
+          "fileOutput": "macos/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "attendo-312ea",
+          "configurations": {
+            "android": "1:414422473305:android:d042f039ee277ba1ed2f48",
+            "ios": "1:414422473305:ios:b5f531f526b3d184ed2f48",
+            "macos": "1:414422473305:ios:b5f531f526b3d184ed2f48",
+            "web": "1:414422473305:web:64a053640f5ee796ed2f48",
+            "windows": "1:414422473305:web:10642ec000e55ee8ed2f48"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}
