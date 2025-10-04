@@ -4,8 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:attendo/utils/theme_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
-import 'package:crypto/crypto.dart';
+import 'package:attendo/services/device_fingerprint_service.dart';
 import 'StudentViewAttendanceScreen.dart';
 
 class StudentAttendanceScreen extends StatefulWidget {
@@ -35,20 +34,10 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
     _fetchSessionDetails();
   }
 
-  // Generate unique device ID
+  // Generate unique device fingerprint using browser/device characteristics
   Future<String> _getDeviceId() async {
-    final prefs = await SharedPreferences.getInstance();
-    String? deviceId = prefs.getString('device_id');
-    
-    if (deviceId == null) {
-      // Generate new device ID using timestamp and random data
-      final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
-      final randomData = '${timestamp}_${DateTime.now().microsecondsSinceEpoch}';
-      deviceId = md5.convert(utf8.encode(randomData)).toString();
-      await prefs.setString('device_id', deviceId);
-    }
-    
-    return deviceId;
+    // Use advanced browser fingerprinting
+    return await DeviceFingerprintService.getFingerprint();
   }
   
   // Check if this device already marked attendance for this session
@@ -241,7 +230,7 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
         backgroundColor: ThemeHelper.getBackgroundColor(context),
         appBar: AppBar(
           title: Text(
-            "Mark Attendance",
+            "Mark Attendance.",
             style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
           ),
           automaticallyImplyLeading: false,

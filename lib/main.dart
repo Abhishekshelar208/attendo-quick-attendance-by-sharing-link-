@@ -13,10 +13,23 @@ import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    //enable following option while deploying on web app.
-    //    options: DefaultFirebaseOptions.currentPlatform
-  );
+  
+  // Initialize Firebase only if not already initialized
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    print('✅ Firebase initialized successfully');
+  } catch (e) {
+    // Firebase already initialized (happens on Android sometimes)
+    if (e.toString().contains('duplicate-app')) {
+      print('ℹ️ Firebase already initialized');
+    } else {
+      print('❌ Firebase initialization error: $e');
+      rethrow;
+    }
+  }
+  
   runApp(const MyApp());
 }
 

@@ -86,7 +86,7 @@ class _StudentViewAttendanceScreenState extends State<StudentViewAttendanceScree
         backgroundColor: ThemeHelper.getBackgroundColor(context),
         appBar: AppBar(
           title: Text(
-            "QuickPro",
+            "QuickPro.",
             style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
           ),
           automaticallyImplyLeading: false,
