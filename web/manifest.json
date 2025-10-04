@@ -1,11 +1,11 @@
 {
-    "name": "attendo",
-    "short_name": "attendo",
+    "name": "QuickPro",
+    "short_name": "QuickPro",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#2563eb",
+    "theme_color": "#2563eb",
+    "description": "QuickPro - Classroom Engagement Platform",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

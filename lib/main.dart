@@ -7,6 +7,7 @@ import 'package:attendo/pages/intro_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'firebase_options.dart';
 
@@ -149,15 +150,24 @@ class MyApp extends StatelessWidget {
       ),
       // Automatically switch based on system theme
       themeMode: ThemeMode.system,
-      home: const SplashChecker(),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const SplashChecker(),
+      },
       onGenerateRoute: (settings) {
+        print('🔍 Navigation to: ${settings.name}');
+        
         Uri uri = Uri.parse(settings.name ?? '');
-        if (uri.pathSegments.length == 2 && uri.pathSegments[0] == 'session') {
+        
+        // Check for session route first
+        if (uri.pathSegments.length >= 2 && uri.pathSegments[0] == 'session') {
           String sessionId = uri.pathSegments[1];
+          print('📱 Opening session: $sessionId');
           return MaterialPageRoute(
             builder: (context) => StudentAttendanceScreen(sessionId: sessionId),
           );
         }
+        
         return null;
       },
     );
@@ -180,6 +190,37 @@ class _SplashCheckerState extends State<SplashChecker> {
 
   Future<void> _checkFirstLaunch() async {
     await Future.delayed(const Duration(milliseconds: 500));
+    
+    // On web, check if URL contains a session route
+    if (kIsWeb) {
+      final currentUrl = Uri.base.toString();
+      print('🌍 Initial URL: $currentUrl');
+      
+      // Check for session in hash fragment
+      if (currentUrl.contains('#/session/')) {
+        final hashPart = Uri.base.fragment;
+        print('🔗 Hash fragment: $hashPart');
+        
+        // Extract session ID from #/session/XXXXX
+        final match = RegExp(r'#/session/([^/]+)').firstMatch(currentUrl);
+        if (match != null) {
+          final sessionId = match.group(1);
+          print('✅ Found session ID: $sessionId');
+          
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => StudentAttendanceScreen(sessionId: sessionId!),
+              ),
+            );
+            return;
+          }
+        }
+      }
+    }
+    
+    // Default flow: check intro
     final prefs = await SharedPreferences.getInstance();
     final hasSeenIntro = prefs.getBool('intro_seen') ?? false;
 
