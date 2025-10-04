@@ -55,29 +55,6 @@ class _HomeScreenWithNavState extends State<HomeScreenWithNav> {
         },
         children: _pages,
       ),
-      floatingActionButton: _currentIndex == 0
-          ? FloatingActionButton.extended(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => CreateAttendanceScreen(),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.add_rounded),
-              label: Text(
-                'New Session',
-                style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              foregroundColor: Colors.white,
-              elevation: 4,
-            )
-          : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           boxShadow: [

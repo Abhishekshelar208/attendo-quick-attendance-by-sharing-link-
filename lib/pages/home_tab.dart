@@ -61,7 +61,7 @@ class HomeTab extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               _buildRecentSessionsList(context),
-              const SizedBox(height: 100), // Space for FAB
+              const SizedBox(height: 24),
             ],
           ),
         ),
