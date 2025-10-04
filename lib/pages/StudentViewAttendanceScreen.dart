@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:attendo/utils/theme_helper.dart';
 
 class StudentViewAttendanceScreen extends StatefulWidget {
   final String sessionId;
+  final String? markedEntry; // The entry this device marked
 
-  StudentViewAttendanceScreen({required this.sessionId});
+  StudentViewAttendanceScreen({
+    required this.sessionId,
+    this.markedEntry,
+  });
 
   @override
   _StudentViewAttendanceScreenState createState() => _StudentViewAttendanceScreenState();
@@ -17,6 +23,8 @@ class _StudentViewAttendanceScreenState extends State<StudentViewAttendanceScree
   String? lectureName;
   String? year;
   String? branch;
+  String? date;
+  String? time;
 
   @override
   void initState() {
@@ -32,9 +40,11 @@ class _StudentViewAttendanceScreenState extends State<StudentViewAttendanceScree
       final data = event.snapshot.value as Map?;
       if (data != null) {
         setState(() {
-          lectureName = data['lecture_name'];
+          lectureName = data['subject'];
           year = data['year'];
           branch = data['branch'];
+          date = data['date'];
+          time = data['time'];
         });
       }
     });
@@ -73,68 +83,379 @@ class _StudentViewAttendanceScreenState extends State<StudentViewAttendanceScree
         return false;
       },
       child: Scaffold(
+        backgroundColor: ThemeHelper.getBackgroundColor(context),
         appBar: AppBar(
-          title: Text("Attendance Marked"),
-          automaticallyImplyLeading: false, // Remove back button from AppBar
+          title: Text(
+            "QuickPro",
+            style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+          ),
+          automaticallyImplyLeading: false,
+          elevation: 0,
+          centerTitle: true,
         ),
-        body: Padding(
-          padding: EdgeInsets.all(16.0),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(20.0),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (lectureName != null) ...[ 
-                Text(
-                  "Lecture: $lectureName",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              const SizedBox(height: 10),
+              
+              // Success Icon
+              Center(
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        ThemeHelper.getSuccessColor(context),
+                        ThemeHelper.getSuccessColor(context).withValues(alpha: 0.8),
+                      ],
+                    ),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: ThemeHelper.getSuccessColor(context).withValues(alpha: 0.3),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.check_circle_rounded,
+                    size: 56,
+                    color: Colors.white,
+                  ),
                 ),
-                SizedBox(height: 8),
-              ],
-              if (year != null && branch != null) ...[ 
-                Text(
-                  "Year: $year | Branch: $branch",
-                  style: TextStyle(fontSize: 16, color: Colors.grey[700]),
-                ),
-                SizedBox(height: 20),
-              ],
+              ),
+              const SizedBox(height: 24),
+              
+              // Success Message Card
               Container(
-                padding: EdgeInsets.all(12),
+                padding: const EdgeInsets.all(28),
                 decoration: BoxDecoration(
-                  color: Colors.green[100],
-                  borderRadius: BorderRadius.circular(8),
+                  gradient: LinearGradient(
+                    colors: [
+                      ThemeHelper.getSuccessColor(context),
+                      ThemeHelper.getSuccessColor(context).withValues(alpha: 0.9),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: ThemeHelper.getSuccessColor(context).withValues(alpha: 0.3),
+                      blurRadius: 15,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      'Attendance Marked Successfully!',
+                      style: GoogleFonts.poppins(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    if (widget.markedEntry != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          'You marked as: ${widget.markedEntry}',
+                          style: GoogleFonts.poppins(
+                            fontSize: 18,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              
+              // Session Info Card
+              if (lectureName != null || (year != null && branch != null) || (date != null && time != null))
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: ThemeHelper.getCardColor(context),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: ThemeHelper.getShadowColor(context),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      if (lectureName != null) ...[
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.book_rounded,
+                              color: ThemeHelper.getPrimaryColor(context),
+                              size: 22,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                lectureName!,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: ThemeHelper.getTextPrimary(context),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      if (lectureName != null && (year != null || date != null))
+                        const SizedBox(height: 12),
+                      if (year != null && branch != null) ...[
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.school_rounded,
+                              color: ThemeHelper.getPrimaryColor(context),
+                              size: 22,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              '$year • $branch',
+                              style: GoogleFonts.poppins(
+                                fontSize: 15,
+                                color: ThemeHelper.getTextSecondary(context),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      if ((year != null && branch != null) && (date != null || time != null))
+                        const SizedBox(height: 12),
+                      if (date != null) ...[
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.calendar_today_rounded,
+                              color: ThemeHelper.getPrimaryColor(context),
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              date!,
+                              style: GoogleFonts.poppins(
+                                fontSize: 15,
+                                color: ThemeHelper.getTextSecondary(context),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      if (date != null && time != null)
+                        const SizedBox(height: 12),
+                      if (time != null) ...[
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.access_time_rounded,
+                              color: ThemeHelper.getPrimaryColor(context),
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              time!,
+                              style: GoogleFonts.poppins(
+                                fontSize: 15,
+                                color: ThemeHelper.getTextSecondary(context),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              
+              const SizedBox(height: 24),
+              
+              // Device Lock Warning
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: ThemeHelper.getPrimaryColor(context).withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: ThemeHelper.getPrimaryColor(context).withValues(alpha: 0.2),
+                    width: 1.5,
+                  ),
                 ),
                 child: Row(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.check_circle, color: Colors.green, size: 24),
-                    SizedBox(width: 10),
-                    Text(
-                      "Your attendance has been marked!",
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green[900]),
+                    Icon(
+                      Icons.lock_rounded,
+                      color: ThemeHelper.getPrimaryColor(context),
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'This device is locked for this session. You cannot mark attendance again.',
+                        style: GoogleFonts.poppins(
+                          color: ThemeHelper.getTextPrimary(context),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ),
                   ],
                 ),
               ),
-              SizedBox(height: 30),
-              Text("Present Students:", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              SizedBox(height: 10),
-              Expanded(
-                child: markedStudents.isEmpty
-                    ? Text("No students have marked attendance yet.")
-                    : Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: markedStudents.map((rollNo) {
-                    return CircleAvatar(
-                      radius: 25,
-                      backgroundColor: Colors.green,
-                      child: Text(
-                        rollNo,
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                      ),
-                    );
-                  }).toList(),
+              
+              const SizedBox(height: 32),
+              
+              // Live Attendance Section
+              Text(
+                'Students Present',
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: ThemeHelper.getTextPrimary(context),
                 ),
               ),
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: ThemeHelper.getCardColor(context),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: ThemeHelper.getShadowColor(context),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: markedStudents.isEmpty
+                    ? Column(
+                        children: [
+                          Icon(
+                            Icons.people_outline_rounded,
+                            size: 64,
+                            color: ThemeHelper.getTextTertiary(context),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No students yet',
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: ThemeHelper.getTextPrimary(context),
+                            ),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        children: [
+                          // Count Badge
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: ThemeHelper.getSuccessColor(context).withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              'Total: ${markedStudents.length}',
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: ThemeHelper.getSuccessColor(context),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          // Students List
+                          Wrap(
+                            spacing: 12,
+                            runSpacing: 12,
+                            children: markedStudents.map((rollNo) {
+                              final isCurrentUser = rollNo == widget.markedEntry;
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isCurrentUser
+                                      ? ThemeHelper.getPrimaryColor(context).withValues(alpha: 0.1)
+                                      : ThemeHelper.getSuccessColor(context).withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: isCurrentUser
+                                        ? ThemeHelper.getPrimaryColor(context).withValues(alpha: 0.3)
+                                        : ThemeHelper.getSuccessColor(context).withValues(alpha: 0.3),
+                                    width: 1.5,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      isCurrentUser
+                                          ? Icons.person_rounded
+                                          : Icons.check_circle_rounded,
+                                      size: 18,
+                                      color: isCurrentUser
+                                          ? ThemeHelper.getPrimaryColor(context)
+                                          : ThemeHelper.getSuccessColor(context),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      rollNo,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: ThemeHelper.getTextPrimary(context),
+                                      ),
+                                    ),
+                                    if (isCurrentUser) ...[
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        '(You)',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w500,
+                                          color: ThemeHelper.getPrimaryColor(context),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      ),
+              ),
+              const SizedBox(height: 40),
             ],
           ),
         ),

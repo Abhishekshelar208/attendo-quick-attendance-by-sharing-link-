@@ -3,6 +3,9 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:attendo/utils/theme_helper.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
 import 'StudentViewAttendanceScreen.dart';
 
 class StudentAttendanceScreen extends StatefulWidget {
@@ -22,11 +25,119 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
   String? branch;
   bool isEnded = false;
   List<String> markedStudents = [];
+  String? alreadyMarkedEntry; // Store if device already marked attendance
+  bool isCheckingDevice = true; // Loading state for device check
 
   @override
   void initState() {
     super.initState();
+    _checkDeviceAttendance();
     _fetchSessionDetails();
+  }
+
+  // Generate unique device ID
+  Future<String> _getDeviceId() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? deviceId = prefs.getString('device_id');
+    
+    if (deviceId == null) {
+      // Generate new device ID using timestamp and random data
+      final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+      final randomData = '${timestamp}_${DateTime.now().microsecondsSinceEpoch}';
+      deviceId = md5.convert(utf8.encode(randomData)).toString();
+      await prefs.setString('device_id', deviceId);
+    }
+    
+    return deviceId;
+  }
+  
+  // Check if this device already marked attendance for this session
+  Future<void> _checkDeviceAttendance() async {
+    try {
+      final deviceId = await _getDeviceId();
+      final prefs = await SharedPreferences.getInstance();
+      final key = 'attendance_${widget.sessionId}';
+      
+      // Check localStorage first
+      final storedEntry = prefs.getString(key);
+      
+      if (storedEntry != null) {
+        // Device already marked attendance
+        setState(() {
+          alreadyMarkedEntry = storedEntry;
+          isCheckingDevice = false;
+        });
+        
+        // Navigate to view screen after short delay
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => StudentViewAttendanceScreen(
+                  sessionId: widget.sessionId,
+                  markedEntry: storedEntry,
+                ),
+              ),
+            );
+          }
+        });
+        return;
+      }
+      
+      // Check Firebase for device ID
+      DatabaseReference studentsRef = FirebaseDatabase.instance
+          .ref()
+          .child("attendance_sessions/${widget.sessionId}/students");
+      
+      DatabaseEvent event = await studentsRef.once();
+      
+      if (event.snapshot.value != null) {
+        Map<dynamic, dynamic> studentsMap = event.snapshot.value as Map<dynamic, dynamic>;
+        
+        // Check if this device ID already exists
+        for (var student in studentsMap.values) {
+          if (student['device_id'] == deviceId) {
+            final entry = student['entry'].toString();
+            
+            // Store in localStorage for faster future checks
+            await prefs.setString(key, entry);
+            
+            setState(() {
+              alreadyMarkedEntry = entry;
+              isCheckingDevice = false;
+            });
+            
+            // Navigate to view screen
+            Future.delayed(const Duration(milliseconds: 500), () {
+              if (mounted) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => StudentViewAttendanceScreen(
+                      sessionId: widget.sessionId,
+                      markedEntry: entry,
+                    ),
+                  ),
+                );
+              }
+            });
+            return;
+          }
+        }
+      }
+      
+      // Device hasn't marked attendance yet
+      setState(() {
+        isCheckingDevice = false;
+      });
+      
+    } catch (e) {
+      print('Error checking device attendance: $e');
+      setState(() {
+        isCheckingDevice = false;
+      });
+    }
   }
 
   void _fetchSessionDetails() async {
@@ -69,6 +180,7 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
     if (_inputController.text.isEmpty) return;
 
     String enteredValue = _inputController.text.trim();
+    final deviceId = await _getDeviceId();
 
     // Check if roll number already exists
     DatabaseReference dbRef = FirebaseDatabase.instance
@@ -81,7 +193,7 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
       Map<dynamic, dynamic> studentsMap = event.snapshot.value as Map<dynamic, dynamic>;
       List<String> existingEntries = studentsMap.values.map((e) => e['entry'].toString()).toList();
       
-      // Check for duplicate
+      // Check for duplicate roll number/name
       if (existingEntries.contains(enteredValue)) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -93,15 +205,26 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
       }
     }
 
-    // Add new attendance entry
+    // Add new attendance entry with device ID
     String studentId = dbRef.push().key!;
-    await dbRef.child(studentId).set({'entry': enteredValue});
+    await dbRef.child(studentId).set({
+      'entry': enteredValue,
+      'device_id': deviceId,
+      'timestamp': DateTime.now().toIso8601String(),
+    });
+    
+    // Store in localStorage
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('attendance_${widget.sessionId}', enteredValue);
 
     // Navigate to StudentViewAttendanceScreen
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (context) => StudentViewAttendanceScreen(sessionId: widget.sessionId),
+        builder: (context) => StudentViewAttendanceScreen(
+          sessionId: widget.sessionId,
+          markedEntry: enteredValue,
+        ),
       ),
     );
   }
@@ -125,10 +248,25 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
           elevation: 0,
           centerTitle: true,
         ),
-        body: inputType == null
+        body: isCheckingDevice || inputType == null
             ? Center(
-                child: CircularProgressIndicator(
-                  color: ThemeHelper.getPrimaryColor(context),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(
+                      color: ThemeHelper.getPrimaryColor(context),
+                    ),
+                    const SizedBox(height: 20),
+                    if (alreadyMarkedEntry != null)
+                      Text(
+                        'Already marked as: $alreadyMarkedEntry',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          color: ThemeHelper.getTextSecondary(context),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                  ],
                 ),
               )
             : isEnded

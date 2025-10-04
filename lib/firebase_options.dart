@@ -54,6 +54,7 @@ class DefaultFirebaseOptions {
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyAzIU9gW4qMREjtnQ91FWfamvOnP2QlK4M',
     appId: '1:414422473305:android:d042f039ee277ba1ed2f48',
+    databaseURL: "https://attendo-312ea-default-rtdb.firebaseio.com/",  // remove this line
     messagingSenderId: '414422473305',
     projectId: 'attendo-312ea',
     storageBucket: 'attendo-312ea.firebasestorage.app',
