@@ -114,7 +114,7 @@ class HomeTab extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'Ready to track attendance?',
+                      'From Attendance to Feedback',
                       style: GoogleFonts.poppins(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -143,7 +143,7 @@ class HomeTab extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Create sessions instantly and share with students',
+                    'Manage attendance, quizzes, feedback & more',
                     style: GoogleFonts.poppins(
                       fontSize: 13,
                       color: Colors.white.withValues(alpha: 0.9),
