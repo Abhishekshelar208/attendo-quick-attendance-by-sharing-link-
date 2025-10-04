@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:attendo/utils/theme_helper.dart';
 import 'StudentViewAttendanceScreen.dart';
 
 class StudentAttendanceScreen extends StatefulWidget {
@@ -35,7 +37,7 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
       final data = event.snapshot.value as Map?;
       if (data != null) {
         setState(() {
-          lectureName = data['lecture_name'];
+          lectureName = data['subject'];
           inputType = data['type']; // "Roll Number" or "Name"
           year = data['year'];
           branch = data['branch'];
@@ -113,73 +115,96 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
         return false;
       },
       child: Scaffold(
-        backgroundColor: Colors.grey[50],
+        backgroundColor: ThemeHelper.getBackgroundColor(context),
         appBar: AppBar(
-          title: Text("Mark Attendance", style: TextStyle(fontWeight: FontWeight.bold)),
+          title: Text(
+            "Mark Attendance",
+            style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+          ),
           automaticallyImplyLeading: false,
           elevation: 0,
-          backgroundColor: Colors.indigo,
           centerTitle: true,
         ),
         body: inputType == null
-            ? Center(child: CircularProgressIndicator(color: Colors.indigo))
+            ? Center(
+                child: CircularProgressIndicator(
+                  color: ThemeHelper.getPrimaryColor(context),
+                ),
+              )
             : isEnded
             ? _buildEndedView()
             : SingleChildScrollView(
                 child: Padding(
-                  padding: EdgeInsets.all(24.0),
+                  padding: const EdgeInsets.all(20.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Header Card with Session Details
-                      Container(
-                        padding: EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [Colors.indigo, Colors.indigo.shade700],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
+                      const SizedBox(height: 10),
+                      
+                      // Welcome Icon/Animation
+                      Center(
+                        child: Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            gradient: ThemeHelper.getPrimaryGradient(context),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: ThemeHelper.getPrimaryColor(context).withValues(alpha: 0.3),
+                                blurRadius: 20,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
                           ),
-                          borderRadius: BorderRadius.circular(16),
+                          child: const Icon(
+                            Icons.how_to_reg_rounded,
+                            size: 56,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      
+                      // Session Info Card
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          gradient: ThemeHelper.getPrimaryGradient(context),
+                          borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.indigo.withOpacity(0.3),
-                              blurRadius: 10,
-                              offset: Offset(0, 5),
+                              color: ThemeHelper.getPrimaryColor(context).withValues(alpha: 0.3),
+                              blurRadius: 15,
+                              offset: const Offset(0, 8),
                             ),
                           ],
                         ),
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              children: [
-                                Icon(Icons.school, color: Colors.white, size: 28),
-                                SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    lectureName ?? "Loading...",
-                                    style: TextStyle(
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                            Text(
+                              lectureName ?? "Loading...",
+                              style: GoogleFonts.poppins(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                              textAlign: TextAlign.center,
                             ),
                             if (year != null && branch != null) ...[
-                              SizedBox(height: 12),
+                              const SizedBox(height: 12),
                               Container(
-                                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(8),
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
-                                  "$year - $branch",
-                                  style: TextStyle(
-                                    fontSize: 16,
+                                  '$year • $branch',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 15,
                                     color: Colors.white,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -189,99 +214,139 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
                           ],
                         ),
                       ),
-                      SizedBox(height: 40),
+                      const SizedBox(height: 32),
                       
-                      // Attendance Form Card
+                      // Input Card
                       Container(
-                        padding: EdgeInsets.all(24),
+                        padding: const EdgeInsets.all(28),
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
+                          color: ThemeHelper.getCardColor(context),
+                          borderRadius: BorderRadius.circular(24),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.08),
-                              blurRadius: 10,
-                              offset: Offset(0, 4),
+                              color: ThemeHelper.getShadowColor(context),
+                              blurRadius: 20,
+                              offset: const Offset(0, 8),
                             ),
                           ],
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              "Mark Your Presence",
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.grey[800],
-                              ),
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: ThemeHelper.getPrimaryColor(context).withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(
+                                    Icons.edit_rounded,
+                                    color: ThemeHelper.getPrimaryColor(context),
+                                    size: 24,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  'Mark Your Presence',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: ThemeHelper.getTextPrimary(context),
+                                  ),
+                                ),
+                              ],
                             ),
-                            SizedBox(height: 8),
+                            const SizedBox(height: 8),
                             Text(
-                              "Enter your details to mark attendance",
-                              style: TextStyle(
+                              'Enter your details below to confirm attendance',
+                              style: GoogleFonts.poppins(
                                 fontSize: 14,
-                                color: Colors.grey[600],
+                                color: ThemeHelper.getTextSecondary(context),
                               ),
                             ),
-                            SizedBox(height: 24),
+                            const SizedBox(height: 28),
                             
                             // Input Field
                             TextField(
                               controller: _inputController,
+                              autofocus: true,
                               decoration: InputDecoration(
                                 labelText: inputType,
-                                hintText: "Enter your $inputType",
+                                hintText: 'Enter your $inputType',
                                 prefixIcon: Icon(
-                                  inputType == "Roll Number" ? Icons.tag : Icons.person,
-                                  color: Colors.indigo,
+                                  inputType == "Roll Number" ? Icons.tag_rounded : Icons.person_rounded,
+                                  color: ThemeHelper.getPrimaryColor(context),
+                                  size: 24,
                                 ),
                                 filled: true,
-                                fillColor: Colors.grey[50],
+                                fillColor: ThemeHelper.getPrimaryColor(context).withValues(alpha: 0.05),
                                 border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(16),
                                   borderSide: BorderSide.none,
                                 ),
                                 enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: Colors.grey.shade300),
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: BorderSide(
+                                    color: ThemeHelper.getBorderColor(context),
+                                    width: 1.5,
+                                  ),
                                 ),
                                 focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: Colors.indigo, width: 2),
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: BorderSide(
+                                    color: ThemeHelper.getPrimaryColor(context),
+                                    width: 2,
+                                  ),
                                 ),
-                                labelStyle: TextStyle(color: Colors.grey[700]),
+                                labelStyle: GoogleFonts.poppins(
+                                  color: ThemeHelper.getTextSecondary(context),
+                                ),
+                                hintStyle: GoogleFonts.poppins(
+                                  color: ThemeHelper.getTextTertiary(context),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 20,
+                                ),
                               ),
                               keyboardType: inputType == "Roll Number"
                                   ? TextInputType.number
                                   : TextInputType.text,
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                              style: GoogleFonts.poppins(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: ThemeHelper.getTextPrimary(context),
+                              ),
+                              textInputAction: TextInputAction.done,
+                              onSubmitted: (_) => submitAttendance(),
                             ),
-                            SizedBox(height: 28),
+                            const SizedBox(height: 28),
                             
                             // Submit Button
                             SizedBox(
                               width: double.infinity,
-                              height: 56,
+                              height: 60,
                               child: ElevatedButton(
                                 onPressed: submitAttendance,
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.indigo,
+                                  backgroundColor: ThemeHelper.getSuccessColor(context),
                                   foregroundColor: Colors.white,
-                                  elevation: 4,
-                                  shadowColor: Colors.indigo.withOpacity(0.4),
+                                  elevation: 0,
+                                  shadowColor: ThemeHelper.getSuccessColor(context).withValues(alpha: 0.4),
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(16),
                                   ),
                                 ),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.check_circle_outline, size: 24),
-                                    SizedBox(width: 8),
+                                    const Icon(Icons.check_circle_rounded, size: 28),
+                                    const SizedBox(width: 12),
                                     Text(
-                                      "Submit Attendance",
-                                      style: TextStyle(
+                                      'Submit Attendance',
+                                      style: GoogleFonts.poppins(
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -293,33 +358,41 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
                           ],
                         ),
                       ),
-                      
-                      SizedBox(height: 24),
+                      const SizedBox(height: 20),
                       
                       // Info Box
                       Container(
-                        padding: EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
-                          color: Colors.blue[50],
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.blue.shade200),
+                          color: ThemeHelper.getPrimaryColor(context).withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: ThemeHelper.getPrimaryColor(context).withValues(alpha: 0.2),
+                            width: 1.5,
+                          ),
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.info_outline, color: Colors.blue[700], size: 24),
-                            SizedBox(width: 12),
+                            Icon(
+                              Icons.info_rounded,
+                              color: ThemeHelper.getPrimaryColor(context),
+                              size: 24,
+                            ),
+                            const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                "Please ensure your $inputType is correct before submitting.",
-                                style: TextStyle(
-                                  color: Colors.blue[900],
+                                'Please ensure your $inputType is correct before submitting',
+                                style: GoogleFonts.poppins(
+                                  color: ThemeHelper.getTextPrimary(context),
                                   fontSize: 13,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ),
                           ],
                         ),
                       ),
+                      const SizedBox(height: 40),
                     ],
                   ),
                 ),
@@ -331,71 +404,87 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
   Widget _buildEndedView() {
     return SingleChildScrollView(
       child: Padding(
-        padding: EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Header Card with Session Details
-            Container(
-              padding: EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.orange, Colors.orange.shade700],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.orange.withOpacity(0.3),
-                    blurRadius: 10,
-                    offset: Offset(0, 5),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.block, color: Colors.white, size: 28),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          "Attendance Ended",
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
+            const SizedBox(height: 20),
+            
+            // Session Ended Icon
+            Center(
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      ThemeHelper.getWarningColor(context),
+                      ThemeHelper.getWarningColor(context).withValues(alpha: 0.8),
                     ],
                   ),
-                  SizedBox(height: 12),
-                  Text(
-                    "This attendance session has been closed by the teacher.",
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white.withOpacity(0.9),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: ThemeHelper.getWarningColor(context).withValues(alpha: 0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
                     ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.lock_clock_rounded,
+                  size: 56,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            const SizedBox(height: 30),
+            
+            // Session Ended Card
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: ThemeHelper.getWarningColor(context).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: ThemeHelper.getWarningColor(context).withValues(alpha: 0.3),
+                  width: 2,
+                ),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    'Session Ended',
+                    style: GoogleFonts.poppins(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: ThemeHelper.getTextPrimary(context),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'This attendance session has been closed by the teacher',
+                    style: GoogleFonts.poppins(
+                      fontSize: 15,
+                      color: ThemeHelper.getTextSecondary(context),
+                    ),
+                    textAlign: TextAlign.center,
                   ),
                 ],
               ),
             ),
-            SizedBox(height: 30),
+            const SizedBox(height: 24),
             
-            // Attendance Details Card
+            // Session Details Card
             Container(
-              padding: EdgeInsets.all(20),
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                color: ThemeHelper.getCardColor(context),
+                borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
-                    blurRadius: 10,
-                    offset: Offset(0, 4),
+                    color: ThemeHelper.getShadowColor(context),
+                    blurRadius: 15,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
@@ -403,79 +492,116 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "Attendance Details",
-                    style: TextStyle(
-                      fontSize: 20,
+                    'Session Details',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.grey[800],
+                      color: ThemeHelper.getTextPrimary(context),
                     ),
                   ),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   if (lectureName != null) ...[
-                    _buildDetailRow(Icons.book, "Lecture", lectureName!),
-                    SizedBox(height: 12),
+                    _buildDetailRow(Icons.book_rounded, 'Lecture', lectureName!),
+                    const SizedBox(height: 16),
                   ],
                   if (year != null && branch != null) ...[
-                    _buildDetailRow(Icons.school, "Class", "$year - $branch"),
-                    SizedBox(height: 12),
+                    _buildDetailRow(Icons.school_rounded, 'Class', '$year - $branch'),
+                    const SizedBox(height: 16),
                   ],
-                  _buildDetailRow(Icons.people, "Total Present", "${markedStudents.length}"),
+                  _buildDetailRow(
+                    Icons.people_rounded,
+                    'Total Present',
+                    '${markedStudents.length}',
+                  ),
                 ],
               ),
             ),
-            SizedBox(height: 30),
+            const SizedBox(height: 24),
             
-            // Present Students List
+            // Present Students Section
             Text(
-              "Present Students",
-              style: TextStyle(
+              'Present Students',
+              style: GoogleFonts.poppins(
                 fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[800],
+                fontWeight: FontWeight.w700,
+                color: ThemeHelper.getTextPrimary(context),
               ),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 12),
             Container(
-              padding: EdgeInsets.all(16),
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: ThemeHelper.getCardColor(context),
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
+                    color: ThemeHelper.getShadowColor(context),
                     blurRadius: 10,
-                    offset: Offset(0, 4),
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
               child: markedStudents.isEmpty
-                  ? Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(20),
-                        child: Text(
-                          "No students marked attendance",
-                          style: TextStyle(color: Colors.grey[600]),
+                  ? Column(
+                      children: [
+                        Icon(
+                          Icons.people_outline_rounded,
+                          size: 64,
+                          color: ThemeHelper.getTextTertiary(context),
                         ),
-                      ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No students marked attendance',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: ThemeHelper.getTextPrimary(context),
+                          ),
+                        ),
+                      ],
                     )
                   : Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
+                      spacing: 12,
+                      runSpacing: 12,
                       children: markedStudents.map((rollNo) {
-                        return CircleAvatar(
-                          radius: 25,
-                          backgroundColor: Colors.green,
-                          child: Text(
-                            rollNo,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: ThemeHelper.getSuccessColor(context).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: ThemeHelper.getSuccessColor(context).withValues(alpha: 0.3),
+                              width: 1.5,
                             ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.check_circle_rounded,
+                                size: 18,
+                                color: ThemeHelper.getSuccessColor(context),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                rollNo,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: ThemeHelper.getTextPrimary(context),
+                                ),
+                              ),
+                            ],
                           ),
                         );
                       }).toList(),
                     ),
             ),
+            const SizedBox(height: 40),
           ],
         ),
       ),
@@ -485,23 +611,34 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
   Widget _buildDetailRow(IconData icon, String label, String value) {
     return Row(
       children: [
-        Icon(icon, color: Colors.indigo, size: 20),
-        SizedBox(width: 12),
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: ThemeHelper.getPrimaryColor(context).withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(
+            icon,
+            color: ThemeHelper.getPrimaryColor(context),
+            size: 20,
+          ),
+        ),
+        const SizedBox(width: 12),
         Text(
-          "$label: ",
-          style: TextStyle(
+          '$label: ',
+          style: GoogleFonts.poppins(
             fontSize: 15,
-            color: Colors.grey[600],
+            color: ThemeHelper.getTextSecondary(context),
             fontWeight: FontWeight.w500,
           ),
         ),
         Expanded(
           child: Text(
             value,
-            style: TextStyle(
+            style: GoogleFonts.poppins(
               fontSize: 15,
-              color: Colors.grey[800],
-              fontWeight: FontWeight.bold,
+              color: ThemeHelper.getTextPrimary(context),
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),

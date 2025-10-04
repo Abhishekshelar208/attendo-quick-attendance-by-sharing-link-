@@ -8,7 +8,7 @@ class HomeScreenForQuickAttendnace extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          "Attendo",
+          "QuickPro",
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.w600,
           ),
@@ -39,7 +39,7 @@ class HomeScreenForQuickAttendnace extends StatelessWidget {
 
                 // Welcome Text
                 Text(
-                  "Welcome to Attendo",
+                  "Welcome to QuickPro",
                   style: GoogleFonts.poppins(
                     fontSize: 28,
                     fontWeight: FontWeight.w700,

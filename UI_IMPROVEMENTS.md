@@ -1,7 +1,7 @@
-# Attendo - UI Improvements Summary
+# QuickPro - UI Improvements Summary
 
 ## Overview
-The Attendo app has been redesigned with a **minimalistic, beautiful, and professional light theme** throughout.
+The QuickPro app has been redesigned with a **minimalistic, beautiful, and professional light theme** throughout.
 
 ## Color Palette
 - **Primary**: Indigo (#6366F1)

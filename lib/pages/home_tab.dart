@@ -11,7 +11,7 @@ class HomeTab extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Attendo',
+          'QuickPro',
           style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
         ),
         actions: [

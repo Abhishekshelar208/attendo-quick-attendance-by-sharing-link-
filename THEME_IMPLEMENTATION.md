@@ -1,4 +1,4 @@
-# Attendo - Minix Theme Implementation
+# QuickPro - Minix Theme Implementation
 
 ## ✅ Implementation Complete!
 

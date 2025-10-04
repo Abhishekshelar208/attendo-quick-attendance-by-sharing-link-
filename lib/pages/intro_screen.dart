@@ -120,7 +120,7 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Attendo',
+                        'QuickPro',
                         style: GoogleFonts.poppins(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,

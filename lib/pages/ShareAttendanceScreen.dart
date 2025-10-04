@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:attendo/utils/theme_helper.dart';
+import 'package:flutter/services.dart';
 
 class ShareAttendanceScreen extends StatefulWidget {
   final String sessionId;
@@ -33,7 +36,7 @@ class _ShareAttendanceScreenState extends State<ShareAttendanceScreen> {
       final data = event.snapshot.value as Map?;
       if (data != null) {
         setState(() {
-          lectureName = data['lecture_name'];
+          lectureName = data['subject'];
           year = data['year'];
           branch = data['branch'];
           isEnded = data['is_ended'] ?? false;
@@ -116,114 +119,525 @@ class _ShareAttendanceScreenState extends State<ShareAttendanceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    String sessionLink = "https://attendo-312ea.web.app/#/session/${widget.sessionId}";
+    
     return Scaffold(
-      appBar: AppBar(title: Text("Share Attendance")),
-      body: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            if (lectureName != null) ...[
-              Text(
-                "Lecture: $lectureName",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 8),
-            ],
-            if (year != null && branch != null) ...[
-              Text(
-                "Year: $year | Branch: $branch",
-                style: TextStyle(fontSize: 16, color: Colors.grey[700]),
-              ),
-              SizedBox(height: 20),
-            ],
-            if (!isEnded) ...[
-              Text("Share this link with students:"),
-              SelectableText("https://attendo-312ea.web.app/#/session/${widget.sessionId}"),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: shareAttendanceLink,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.indigo,
-                  padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                ),
-                child: Text("Share Link", style: TextStyle(fontSize: 16)),
-              ),
-              SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: endAttendance,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange,
-                  padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                ),
-                child: Text("End Attendance", style: TextStyle(fontSize: 16)),
-              ),
-            ] else ...[
-              Container(
-                padding: EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.orange[100],
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.orange),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+      backgroundColor: ThemeHelper.getBackgroundColor(context),
+      appBar: AppBar(
+        title: Text(
+          'Session Active',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+        ),
+        elevation: 0,
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Session Info Card
+              _buildSessionInfoCard(context),
+              const SizedBox(height: 20),
+
+              // Live Count Card
+              _buildLiveCountCard(context),
+              const SizedBox(height: 20),
+
+              // Share Link Section
+              if (!isEnded) ...[
+                _buildShareLinkCard(context, sessionLink),
+                const SizedBox(height: 16),
+                
+                // Action Buttons
+                Row(
                   children: [
-                    Icon(Icons.block, color: Colors.orange[900]),
-                    SizedBox(width: 10),
-                    Text(
-                      "Attendance Session Ended",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.orange[900],
+                    Expanded(
+                      child: _buildActionButton(
+                        context,
+                        label: 'Share Link',
+                        icon: Icons.share_rounded,
+                        color: ThemeHelper.getPrimaryColor(context),
+                        onPressed: shareAttendanceLink,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildActionButton(
+                        context,
+                        label: 'End Session',
+                        icon: Icons.stop_circle_rounded,
+                        color: ThemeHelper.getWarningColor(context),
+                        onPressed: endAttendance,
                       ),
                     ),
                   ],
                 ),
-              ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: exportAttendance,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+              ] else ...[
+                // Session Ended Card
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: ThemeHelper.getWarningColor(context).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: ThemeHelper.getWarningColor(context).withValues(alpha: 0.3),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: ThemeHelper.getWarningColor(context).withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          Icons.check_circle_rounded,
+                          color: ThemeHelper.getWarningColor(context),
+                          size: 28,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Session Ended',
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: ThemeHelper.getTextPrimary(context),
+                              ),
+                            ),
+                            Text(
+                              'Students can no longer join',
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                color: ThemeHelper.getTextSecondary(context),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+                const SizedBox(height: 16),
+                _buildActionButton(
+                  context,
+                  label: 'Export Attendance',
+                  icon: Icons.download_rounded,
+                  color: ThemeHelper.getSuccessColor(context),
+                  onPressed: exportAttendance,
+                ),
+              ],
+              const SizedBox(height: 24),
+
+              // Live Attendance Section
+              _buildLiveAttendanceSection(context),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSessionInfoCard(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: ThemeHelper.getPrimaryGradient(context),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: ThemeHelper.getPrimaryColor(context).withValues(alpha: 0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.class_rounded,
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.download),
-                    SizedBox(width: 8),
-                    Text("Export Attendance", style: TextStyle(fontSize: 16)),
+                    Text(
+                      lectureName ?? 'Loading...',
+                      style: GoogleFonts.poppins(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    if (year != null && branch != null)
+                      Text(
+                        '$year • $branch',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          color: Colors.white.withValues(alpha: 0.9),
+                        ),
+                      ),
                   ],
                 ),
               ),
             ],
-            SizedBox(height: 30),
-            Text("Live Attendance:", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            SizedBox(height: 10),
-            Expanded(
-              child: markedStudents.isEmpty
-                  ? Text("No students have marked attendance yet.")
-                  : Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: markedStudents.map((rollNo) {
-                  return CircleAvatar(
-                    radius: 25,
-                    backgroundColor: Colors.green,
-                    child: Text(
-                      rollNo,
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLiveCountCard(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: ThemeHelper.getCardColor(context),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: ThemeHelper.getSuccessColor(context).withValues(alpha: 0.3),
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: ThemeHelper.getShadowColor(context),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: ThemeHelper.getSuccessColor(context).withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(
+              Icons.people_rounded,
+              color: ThemeHelper.getSuccessColor(context),
+              size: 40,
+            ),
+          ),
+          const SizedBox(width: 20),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Students Present',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: ThemeHelper.getTextSecondary(context),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '${markedStudents.length}',
+                      style: GoogleFonts.poppins(
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
+                        color: ThemeHelper.getSuccessColor(context),
+                        height: 1,
+                      ),
                     ),
-                  );
-                }).toList(),
+                    const SizedBox(width: 8),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: ThemeHelper.getSuccessColor(context).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.circle,
+                              size: 8,
+                              color: ThemeHelper.getSuccessColor(context),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'LIVE',
+                              style: GoogleFonts.poppins(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: ThemeHelper.getSuccessColor(context),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShareLinkCard(BuildContext context, String link) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: ThemeHelper.getCardColor(context),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: ThemeHelper.getBorderColor(context),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: ThemeHelper.getShadowColor(context),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.link_rounded,
+                color: ThemeHelper.getPrimaryColor(context),
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Session Link',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: ThemeHelper.getTextPrimary(context),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: ThemeHelper.getPrimaryColor(context).withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: ThemeHelper.getPrimaryColor(context).withValues(alpha: 0.2),
               ),
             ),
-          ],
-        ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    link,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: ThemeHelper.getTextSecondary(context),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                InkWell(
+                  onTap: () {
+                    Clipboard.setData(ClipboardData(text: link));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Link copied to clipboard',
+                          style: GoogleFonts.poppins(),
+                        ),
+                        behavior: SnackBarBehavior.floating,
+                        backgroundColor: ThemeHelper.getSuccessColor(context),
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: ThemeHelper.getPrimaryColor(context),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Icon(
+                      Icons.copy_rounded,
+                      size: 16,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildActionButton(
+    BuildContext context, {
+    required String label,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return ElevatedButton(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        elevation: 0,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 20),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLiveAttendanceSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Live Attendance',
+          style: GoogleFonts.poppins(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: ThemeHelper.getTextPrimary(context),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: ThemeHelper.getCardColor(context),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: ThemeHelper.getShadowColor(context),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: markedStudents.isEmpty
+              ? Column(
+                  children: [
+                    Icon(
+                      Icons.people_outline_rounded,
+                      size: 64,
+                      color: ThemeHelper.getTextTertiary(context),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No students yet',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: ThemeHelper.getTextPrimary(context),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Students will appear here as they mark attendance',
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        color: ThemeHelper.getTextSecondary(context),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                )
+              : Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: markedStudents.map((rollNo) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: ThemeHelper.getSuccessColor(context).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: ThemeHelper.getSuccessColor(context).withValues(alpha: 0.3),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.check_circle_rounded,
+                            size: 18,
+                            color: ThemeHelper.getSuccessColor(context),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            rollNo,
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: ThemeHelper.getTextPrimary(context),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+        ),
+      ],
     );
   }
 }

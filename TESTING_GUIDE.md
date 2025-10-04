@@ -1,4 +1,4 @@
-# Attendo App - Testing & Debugging Guide
+# QuickPro App - Testing & Debugging Guide
 
 ## 🔍 App Features & How to Test
 

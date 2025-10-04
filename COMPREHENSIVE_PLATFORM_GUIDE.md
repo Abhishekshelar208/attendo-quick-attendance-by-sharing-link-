@@ -1,8 +1,8 @@
-# Attendo - Comprehensive Classroom Engagement Platform
+# QuickPro - Comprehensive Classroom Engagement Platform
 
 ## 🎉 **Complete Transformation!**
 
-Attendo is now a **full-featured classroom engagement platform**, not just an attendance tracker!
+QuickPro is now a **full-featured classroom engagement platform**, not just an attendance tracker!
 
 ---
 

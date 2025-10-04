@@ -1,4 +1,4 @@
-# Attendo App - Implementation Summary & Debugging
+# QuickPro App - Implementation Summary & Debugging
 
 ## ✅ What's Been Implemented
 

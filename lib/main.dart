@@ -8,6 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'firebase_options.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
@@ -23,7 +25,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Attendo',
+      title: 'QuickPro',
       debugShowCheckedModeBanner: false,
       // Light Theme (Minix-inspired)
       theme: ThemeData(
@@ -207,7 +209,7 @@ class _SplashCheckerState extends State<SplashChecker> {
             ),
             const SizedBox(height: 24),
             Text(
-              'Attendo',
+              'QuickPro',
               style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
