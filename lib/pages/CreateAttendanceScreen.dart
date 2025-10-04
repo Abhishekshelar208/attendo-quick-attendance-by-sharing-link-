@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:attendo/utils/theme_helper.dart';
 import 'ShareAttendanceScreen.dart';
 
 class CreateAttendanceScreen extends StatefulWidget {
@@ -110,7 +111,7 @@ class _CreateAttendanceScreenState extends State<CreateAttendanceScreen> {
                 ),
                 SizedBox(height: 16),
                 Text(
-                  'Creating session...',
+                  'Creating attendance...',
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     color: Color(0xFF64748B),
@@ -168,36 +169,82 @@ class _CreateAttendanceScreenState extends State<CreateAttendanceScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: ThemeHelper.getBackgroundColor(context),
       appBar: AppBar(
         title: Text(
-          "Create Session",
+          "Create Attendance Session",
           style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
         ),
         leading: IconButton(
           icon: Icon(Icons.arrow_back_rounded),
           onPressed: () => Navigator.pop(context),
         ),
+        elevation: 0,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: EdgeInsets.all(24),
+          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 24),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header
+                // Info Card
+                Container(
+                  padding: EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: ThemeHelper.getPrimaryGradient(context),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: ThemeHelper.getPrimaryColor(context).withValues(alpha: 0.3),
+                        blurRadius: 10,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          Icons.info_outline_rounded,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                      SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                          'Fill in the details carefully. Students will use the shared link to mark attendance.',
+                          style: GoogleFonts.poppins(
+                            fontSize: 13,
+                            color: Colors.white,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 32),
+
+                // Form Title
                 Text(
-                  "Session Details",
+                  "Session Information",
                   style: GoogleFonts.poppins(
-                    fontSize: 24,
+                    fontSize: 20,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF1E293B),
+                    color: ThemeHelper.getTextPrimary(context),
                   ),
                 ),
                 SizedBox(height: 8),
                 Text(
-                  "Fill in the information below to create a new attendance session",
+                  "All fields marked with * are required",
                   style: GoogleFonts.inter(
                     fontSize: 14,
                     color: Color(0xFF64748B),
@@ -206,27 +253,53 @@ class _CreateAttendanceScreenState extends State<CreateAttendanceScreen> {
                 SizedBox(height: 32),
 
                 // Subject Name
-                _buildSectionLabel("Subject", true),
+                _buildSectionLabel(context, "Subject Name", true),
                 SizedBox(height: 8),
-                TextFormField(
-                  controller: _subjectController,
-                  style: GoogleFonts.inter(
-                    fontSize: 15,
-                    color: Color(0xFF1E293B),
-                  ),
-                  decoration: InputDecoration(
-                    hintText: "Enter subject name",
-                    hintStyle: GoogleFonts.inter(
-                      color: Color(0xFF94A3B8),
+                Container(
+                  decoration: BoxDecoration(
+                    color: ThemeHelper.getCardColor(context),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: ThemeHelper.getBorderColor(context),
+                      width: 1,
                     ),
-                    prefixIcon: Icon(Icons.book_rounded, color: Color(0xFF6366F1)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.02),
+                        blurRadius: 4,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter subject name';
-                    }
-                    return null;
-                  },
+                  child: TextFormField(
+                    controller: _subjectController,
+                    style: GoogleFonts.poppins(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: ThemeHelper.getTextPrimary(context),
+                    ),
+                    decoration: InputDecoration(
+                      hintText: "e.g., Data Structures, Mathematics",
+                      hintStyle: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: ThemeHelper.getTextTertiary(context),
+                        fontWeight: FontWeight.w400,
+                      ),
+                      prefixIcon: Icon(
+                        Icons.book_rounded,
+                        color: ThemeHelper.getPrimaryColor(context),
+                        size: 22,
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter subject name';
+                      }
+                      return null;
+                    },
+                  ),
                 ),
                 SizedBox(height: 24),
 
@@ -237,12 +310,13 @@ class _CreateAttendanceScreenState extends State<CreateAttendanceScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildSectionLabel("Year", true),
+                          _buildSectionLabel(context, "Year", true),
                           SizedBox(height: 8),
                           _buildDropdown(
+                            context,
                             value: selectedYear,
                             items: years,
-                            hint: "Select",
+                            hint: "Year",
                             icon: Icons.school_rounded,
                             onChanged: (value) => setState(() => selectedYear = value),
                           ),
@@ -254,12 +328,13 @@ class _CreateAttendanceScreenState extends State<CreateAttendanceScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildSectionLabel("Branch", true),
+                          _buildSectionLabel(context, "Branch", true),
                           SizedBox(height: 8),
                           _buildDropdown(
+                            context,
                             value: selectedBranch,
                             items: branches,
-                            hint: "Select",
+                            hint: "Branch",
                             icon: Icons.apartment_rounded,
                             onChanged: (value) => setState(() => selectedBranch = value),
                           ),
@@ -271,9 +346,9 @@ class _CreateAttendanceScreenState extends State<CreateAttendanceScreen> {
                 SizedBox(height: 24),
 
                 // Division
-                _buildSectionLabel("Division", true),
+                _buildSectionLabel(context, "Division", true),
                 SizedBox(height: 8),
-                _buildDivisionSelector(),
+                _buildDivisionSelector(context),
                 SizedBox(height: 24),
 
                 // Date and Time
@@ -283,9 +358,10 @@ class _CreateAttendanceScreenState extends State<CreateAttendanceScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildSectionLabel("Date", true),
+                          _buildSectionLabel(context, "Date", true),
                           SizedBox(height: 8),
                           _buildDateTimeTile(
+                            context,
                             icon: Icons.calendar_today_rounded,
                             text: selectedDate != null
                                 ? DateFormat('dd MMM yyyy').format(selectedDate!)
@@ -301,9 +377,10 @@ class _CreateAttendanceScreenState extends State<CreateAttendanceScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildSectionLabel("Time", true),
+                          _buildSectionLabel(context, "Time", true),
                           SizedBox(height: 8),
                           _buildDateTimeTile(
+                            context,
                             icon: Icons.access_time_rounded,
                             text: selectedTime != null
                                 ? selectedTime!.format(context)
@@ -319,9 +396,9 @@ class _CreateAttendanceScreenState extends State<CreateAttendanceScreen> {
                 SizedBox(height: 24),
 
                 // Type Selection
-                _buildSectionLabel("Attendance Type", true),
+                _buildSectionLabel(context, "Attendance Type", true),
                 SizedBox(height: 8),
-                _buildTypeSelector(),
+                _buildTypeSelector(context),
                 SizedBox(height: 40),
 
                 // Create Button
@@ -350,7 +427,7 @@ class _CreateAttendanceScreenState extends State<CreateAttendanceScreen> {
     );
   }
 
-  Widget _buildSectionLabel(String label, bool required) {
+  Widget _buildSectionLabel(BuildContext context, String label, bool required) {
     return Row(
       children: [
         Text(
@@ -358,19 +435,24 @@ class _CreateAttendanceScreenState extends State<CreateAttendanceScreen> {
           style: GoogleFonts.poppins(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF1E293B),
+            color: ThemeHelper.getTextPrimary(context),
           ),
         ),
         if (required)
           Text(
             ' *',
-            style: TextStyle(color: Color(0xFFEF4444), fontSize: 14),
+            style: TextStyle(
+              color: ThemeHelper.getErrorColor(context),
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
           ),
       ],
     );
   }
 
-  Widget _buildDropdown({
+  Widget _buildDropdown(
+    BuildContext context, {
     required String? value,
     required List<String> items,
     required String hint,
@@ -379,9 +461,19 @@ class _CreateAttendanceScreenState extends State<CreateAttendanceScreen> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Color(0xFFF8FAFC),
+        color: ThemeHelper.getCardColor(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Color(0xFFE2E8F0)),
+        border: Border.all(
+          color: ThemeHelper.getBorderColor(context),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 4,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
@@ -389,15 +481,23 @@ class _CreateAttendanceScreenState extends State<CreateAttendanceScreen> {
           isExpanded: true,
           hint: Text(
             hint,
-            style: GoogleFonts.inter(color: Color(0xFF94A3B8), fontSize: 15),
+            style: GoogleFonts.poppins(
+              color: ThemeHelper.getTextTertiary(context),
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+            ),
           ),
-          icon: Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF64748B)),
-          style: GoogleFonts.inter(
+          icon: Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: ThemeHelper.getTextSecondary(context),
+          ),
+          style: GoogleFonts.poppins(
             fontSize: 15,
-            color: Color(0xFF1E293B),
+            fontWeight: FontWeight.w500,
+            color: ThemeHelper.getTextPrimary(context),
           ),
-          dropdownColor: Colors.white,
-          padding: EdgeInsets.symmetric(horizontal: 16),
+          dropdownColor: ThemeHelper.getCardColor(context),
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           items: items.map((item) {
             return DropdownMenuItem(
               value: item,
@@ -410,7 +510,7 @@ class _CreateAttendanceScreenState extends State<CreateAttendanceScreen> {
     );
   }
 
-  Widget _buildDivisionSelector() {
+  Widget _buildDivisionSelector(BuildContext context) {
     return Row(
       children: divisions.map((division) {
         bool isSelected = selectedDivision == division;
@@ -421,22 +521,38 @@ class _CreateAttendanceScreenState extends State<CreateAttendanceScreen> {
               onTap: () => setState(() => selectedDivision = division),
               borderRadius: BorderRadius.circular(12),
               child: Container(
-                padding: EdgeInsets.symmetric(vertical: 16),
+                padding: EdgeInsets.symmetric(vertical: 18),
                 decoration: BoxDecoration(
-                  color: isSelected ? Color(0xFF6366F1) : Color(0xFFF8FAFC),
+                  color: isSelected
+                      ? ThemeHelper.getPrimaryColor(context)
+                      : ThemeHelper.getCardColor(context),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isSelected ? Color(0xFF6366F1) : Color(0xFFE2E8F0),
+                    color: isSelected
+                        ? ThemeHelper.getPrimaryColor(context)
+                        : ThemeHelper.getBorderColor(context),
                     width: isSelected ? 2 : 1,
                   ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: ThemeHelper.getPrimaryColor(context)
+                                .withValues(alpha: 0.3),
+                            blurRadius: 8,
+                            offset: Offset(0, 4),
+                          ),
+                        ]
+                      : [],
                 ),
                 child: Center(
                   child: Text(
                     division,
                     style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: isSelected ? Colors.white : Color(0xFF64748B),
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: isSelected
+                          ? Colors.white
+                          : ThemeHelper.getTextSecondary(context),
                     ),
                   ),
                 ),
@@ -448,7 +564,8 @@ class _CreateAttendanceScreenState extends State<CreateAttendanceScreen> {
     );
   }
 
-  Widget _buildDateTimeTile({
+  Widget _buildDateTimeTile(
+    BuildContext context, {
     required IconData icon,
     required String text,
     required VoidCallback onTap,
@@ -458,30 +575,43 @@ class _CreateAttendanceScreenState extends State<CreateAttendanceScreen> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
         decoration: BoxDecoration(
-          color: Color(0xFFF8FAFC),
+          color: ThemeHelper.getCardColor(context),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? Color(0xFF6366F1) : Color(0xFFE2E8F0),
+            color: isSelected
+                ? ThemeHelper.getPrimaryColor(context)
+                : ThemeHelper.getBorderColor(context),
             width: isSelected ? 2 : 1,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 4,
+              offset: Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           children: [
             Icon(
               icon,
-              size: 20,
-              color: isSelected ? Color(0xFF6366F1) : Color(0xFF64748B),
+              size: 22,
+              color: isSelected
+                  ? ThemeHelper.getPrimaryColor(context)
+                  : ThemeHelper.getTextSecondary(context),
             ),
             SizedBox(width: 12),
             Expanded(
               child: Text(
                 text,
-                style: GoogleFonts.inter(
+                style: GoogleFonts.poppins(
                   fontSize: 14,
-                  color: isSelected ? Color(0xFF1E293B) : Color(0xFF94A3B8),
-                  fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
+                  fontWeight: FontWeight.w500,
+                  color: isSelected
+                      ? ThemeHelper.getTextPrimary(context)
+                      : ThemeHelper.getTextTertiary(context),
                 ),
               ),
             ),
@@ -491,7 +621,7 @@ class _CreateAttendanceScreenState extends State<CreateAttendanceScreen> {
     );
   }
 
-  Widget _buildTypeSelector() {
+  Widget _buildTypeSelector(BuildContext context) {
     return Row(
       children: types.map((type) {
         bool isSelected = selectedType == type;
@@ -502,30 +632,47 @@ class _CreateAttendanceScreenState extends State<CreateAttendanceScreen> {
               onTap: () => setState(() => selectedType = type),
               borderRadius: BorderRadius.circular(12),
               child: Container(
-                padding: EdgeInsets.symmetric(vertical: 16),
+                padding: EdgeInsets.symmetric(vertical: 18),
                 decoration: BoxDecoration(
-                  color: isSelected ? Color(0xFF6366F1).withOpacity(0.1) : Color(0xFFF8FAFC),
+                  color: isSelected
+                      ? ThemeHelper.getPrimaryColor(context).withValues(alpha: 0.1)
+                      : ThemeHelper.getCardColor(context),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isSelected ? Color(0xFF6366F1) : Color(0xFFE2E8F0),
+                    color: isSelected
+                        ? ThemeHelper.getPrimaryColor(context)
+                        : ThemeHelper.getBorderColor(context),
                     width: isSelected ? 2 : 1,
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.02),
+                      blurRadius: 4,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      type == 'Roll Number' ? Icons.tag_rounded : Icons.person_rounded,
-                      size: 20,
-                      color: isSelected ? Color(0xFF6366F1) : Color(0xFF64748B),
+                      type == 'Roll Number'
+                          ? Icons.tag_rounded
+                          : Icons.person_rounded,
+                      size: 22,
+                      color: isSelected
+                          ? ThemeHelper.getPrimaryColor(context)
+                          : ThemeHelper.getTextSecondary(context),
                     ),
-                    SizedBox(width: 8),
+                    SizedBox(width: 10),
                     Text(
                       type,
                       style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                        color: isSelected ? Color(0xFF6366F1) : Color(0xFF64748B),
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: isSelected
+                            ? ThemeHelper.getPrimaryColor(context)
+                            : ThemeHelper.getTextSecondary(context),
                       ),
                     ),
                   ],
