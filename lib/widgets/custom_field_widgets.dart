@@ -38,6 +38,15 @@ class _CustomFieldWidgetState extends State<CustomFieldWidget> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    // Initialize yes/no to 'No' by default so it's never empty
+    if (widget.fieldConfig['type'] == 'yesno') {
+      widget.onValueChanged(widget.fieldConfig['name'], 'No');
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     String fieldName = widget.fieldConfig['name'];
     String fieldType = widget.fieldConfig['type'];
@@ -413,44 +422,64 @@ class _CustomFieldWidgetState extends State<CustomFieldWidget> {
   }
 
   Future<void> _pickFile() async {
+    print('📁 Starting file picker...');
+    
     // Show loading state immediately
     setState(() {
       _isPickingFile = true;
     });
 
     try {
+      print('📱 Opening file picker dialog...');
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx'],
+        allowMultiple: false,
       );
 
-      if (result != null && result.files.single.name.isNotEmpty) {
+      print('📝 File picker result: ${result != null ? "Got result" : "null"}');
+      
+      if (result != null && result.files.isNotEmpty && result.files.single.name.isNotEmpty) {
         final fileName = result.files.single.name;
-        final filePath = result.files.single.path;
+        // On web, path is not available, use bytes instead
+        final fileBytes = result.files.single.bytes;
+        final filePath = result.files.single.path; // This will be null on web
         
+        print('🎉 File selected: $fileName');
+        print('   Bytes available: ${fileBytes != null ? "Yes (${fileBytes.length} bytes)" : "No"}');
+        print('   Path: ${filePath ?? "Not available (web platform)"}');
+        
+        final fieldName = widget.fieldConfig['name'];
+        final valueToSend = 'File: $fileName';
+        
+        print('📤 Calling onValueChanged with:');
+        print('   Field: $fieldName');
+        print('   Value: $valueToSend');
+        
+        // CRITICAL: Call callback FIRST before setState
+        widget.onValueChanged(fieldName, valueToSend);
+        
+        print('✅ Callback called successfully');
+        
+        // Then update local state
         setState(() {
           _uploadedFileName = fileName;
-          _uploadedFilePath = filePath;
+          _uploadedFilePath = filePath ?? fileName; // Use filename if path unavailable (web)
           _isPickingFile = false;
         });
         
-        // CRITICAL: Immediately notify parent with the value
-        // This ensures validation passes
-        widget.onValueChanged(
-          widget.fieldConfig['name'],
-          'File: $fileName',
-        );
-        
-        print('✅ File selected: $fileName');
+        print('✅ File upload complete: $fileName');
       } else {
         // User cancelled or no file selected
         setState(() {
           _isPickingFile = false;
         });
-        print('⚠️ File selection cancelled');
+        print('⚠️ File selection cancelled or no file selected');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('❌ Error picking file: $e');
+      print('Stack trace: $stackTrace');
+      
       setState(() {
         _isPickingFile = false;
       });

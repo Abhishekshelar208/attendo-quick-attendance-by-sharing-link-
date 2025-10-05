@@ -5,8 +5,11 @@ import 'package:attendo/pages/StudentAttendanceScreen.dart';
 import 'package:attendo/pages/StudentEventCheckInScreen.dart';
 import 'package:attendo/pages/home_screen_with_nav.dart';
 import 'package:attendo/pages/intro_screen.dart';
+import 'package:attendo/pages/LoginScreen.dart';
+import 'package:attendo/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
@@ -205,6 +208,8 @@ class SplashChecker extends StatefulWidget {
 }
 
 class _SplashCheckerState extends State<SplashChecker> {
+  final AuthService _authService = AuthService();
+  
   @override
   void initState() {
     super.initState();
@@ -266,18 +271,53 @@ class _SplashCheckerState extends State<SplashChecker> {
       }
     }
     
-    // Default flow: check intro
+    // Default flow: check auth status
+    final user = _authService.currentUser;
     final prefs = await SharedPreferences.getInstance();
     final hasSeenIntro = prefs.getBool('intro_seen') ?? false;
-
-    if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) =>
-              hasSeenIntro ? const HomeScreenWithNav() : const IntroScreen(),
-        ),
-      );
+    
+    if (user != null) {
+      // User is logged in
+      print('✅ User authenticated: ${user.email}');
+      
+      if (hasSeenIntro) {
+        // User has seen intro, go directly to home
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const HomeScreenWithNav()),
+          );
+        }
+      } else {
+        // User is authenticated but hasn't seen intro, show intro (they can skip it)
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const IntroScreen()),
+          );
+        }
+      }
+    } else {
+      // User not logged in
+      print('⚠️ User not authenticated');
+      
+      if (hasSeenIntro) {
+        // User has seen intro before but logged out, show login screen
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const LoginScreen()),
+          );
+        }
+      } else {
+        // First time user, show intro screen with sign-in on slide 3
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const IntroScreen()),
+          );
+        }
+      }
     }
   }
 

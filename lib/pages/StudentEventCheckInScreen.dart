@@ -126,10 +126,7 @@ class _StudentEventCheckInScreenState extends State<StudentEventCheckInScreen> {
         print('✅ Event loaded: ${data['event_name']} (${data['input_type']})');
         print('   Custom fields: ${customFields.length}');
 
-        // Check if event ended
-        if (data['status'] == 'ended') {
-          _showEventEndedDialog();
-        }
+        // Don't show dialog - the UI will handle ended state
       } else {
         print('⚠️ Event not found!');
         setState(() => isLoading = false);
@@ -142,25 +139,6 @@ class _StudentEventCheckInScreenState extends State<StudentEventCheckInScreen> {
     }
   }
 
-  void _showEventEndedDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: Text('Event Ended', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-        content: Text(
-          'This event has ended and is no longer accepting check-ins.',
-          style: GoogleFonts.poppins(),
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
 
   void _showErrorDialog(String message) {
     showDialog(
@@ -194,13 +172,24 @@ class _StudentEventCheckInScreenState extends State<StudentEventCheckInScreen> {
     }
     
     // Validate custom fields
+    print('🔍 Validating custom fields...');
+    print('   Total custom fields: ${customFields.length}');
+    print('   Values in map: ${_customFieldValues.length}');
+    print('   All values: $_customFieldValues');
+    
     for (var field in customFields) {
       String fieldName = field['name'];
+      String fieldType = field['type'] ?? 'text';
       bool isRequired = field['required'] ?? true;
+      
+      print('   Checking field: $fieldName (type: $fieldType, required: $isRequired)');
       
       if (isRequired) {
         dynamic value = _customFieldValues[fieldName];
+        print('     Value: $value');
+        
         if (value == null || value.toString().trim().isEmpty) {
+          print('     ❌ VALIDATION FAILED: Value is empty!');
           EnhancedSnackBar.show(
             context,
             message: 'Please fill in $fieldName',
@@ -208,8 +197,11 @@ class _StudentEventCheckInScreenState extends State<StudentEventCheckInScreen> {
           );
           return;
         }
+        print('     ✅ Validation passed');
       }
     }
+    print('✅ All custom fields validated successfully!');
+    
 
     // Check capacity limit
     if (eventData!.containsKey('capacity')) {
@@ -446,6 +438,9 @@ class _StudentEventCheckInScreenState extends State<StudentEventCheckInScreen> {
       );
     }
 
+    // Check if event has ended
+    bool isEventEnded = eventData!['status'] == 'ended';
+
     return Scaffold(
       backgroundColor: ThemeHelper.getBackgroundColor(context),
       appBar: AppBar(
@@ -453,7 +448,9 @@ class _StudentEventCheckInScreenState extends State<StudentEventCheckInScreen> {
         automaticallyImplyLeading: false,
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
+        child: isEventEnded
+            ? _buildEndedView()
+            : SingleChildScrollView(
           padding: EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -629,9 +626,12 @@ class _StudentEventCheckInScreenState extends State<StudentEventCheckInScreen> {
                     fieldConfig: field,
                     enabled: !isSubmitting,
                     onValueChanged: (fieldName, value) {
+                      print('📝 Custom field value changed: $fieldName = $value');
                       setState(() {
                         _customFieldValues[fieldName] = value;
                       });
+                      print('✅ Value stored in map. Total fields: ${_customFieldValues.length}');
+                      print('   Current values: $_customFieldValues');
                     },
                   ),
                 );
@@ -736,6 +736,281 @@ class _StudentEventCheckInScreenState extends State<StudentEventCheckInScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildEndedView() {
+    // Fetch participants count and list
+    int participantCount = 0;
+    List<String> participants = [];
+    
+    if (eventData!.containsKey('participants')) {
+      final participantsData = eventData!['participants'] as Map;
+      participantCount = participantsData.length;
+      participants = participantsData.values
+          .map((p) => p['entry'].toString())
+          .toList();
+      
+      // Sort participants
+      participants.sort((a, b) {
+        final aNum = int.tryParse(a);
+        final bNum = int.tryParse(b);
+        if (aNum != null && bNum != null) {
+          return aNum.compareTo(bNum);
+        }
+        return a.compareTo(b);
+      });
+    }
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(height: 20),
+          
+          // Event Ended Icon
+          Center(
+            child: Container(
+              padding: EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    ThemeHelper.getWarningColor(context),
+                    ThemeHelper.getWarningColor(context).withValues(alpha: 0.8),
+                  ],
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: ThemeHelper.getWarningColor(context).withValues(alpha: 0.3),
+                    blurRadius: 20,
+                    offset: Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Icon(
+                Icons.event_busy_rounded,
+                size: 56,
+                color: Colors.white,
+              ),
+            ),
+          ),
+          SizedBox(height: 30),
+          
+          // Event Ended Card
+          Container(
+            padding: EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: ThemeHelper.getWarningColor(context).withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: ThemeHelper.getWarningColor(context).withValues(alpha: 0.3),
+                width: 2,
+              ),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  'Event Ended',
+                  style: GoogleFonts.poppins(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: ThemeHelper.getTextPrimary(context),
+                  ),
+                ),
+                SizedBox(height: 12),
+                Text(
+                  'This event has ended and is no longer accepting check-ins',
+                  style: GoogleFonts.poppins(
+                    fontSize: 15,
+                    color: ThemeHelper.getTextSecondary(context),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: 24),
+          
+          // Event Details Card
+          Container(
+            padding: EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: ThemeHelper.getCardColor(context),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: ThemeHelper.getShadowColor(context),
+                  blurRadius: 15,
+                  offset: Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Event Details',
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: ThemeHelper.getTextPrimary(context),
+                  ),
+                ),
+                SizedBox(height: 20),
+                _buildDetailRow(Icons.celebration_rounded, 'Event', eventData!['event_name']),
+                SizedBox(height: 16),
+                _buildDetailRow(Icons.location_on_rounded, 'Venue', eventData!['venue']),
+                SizedBox(height: 16),
+                _buildDetailRow(Icons.calendar_today_rounded, 'Date', eventData!['date']),
+                SizedBox(height: 16),
+                _buildDetailRow(Icons.access_time_rounded, 'Time', eventData!['time']),
+                SizedBox(height: 16),
+                _buildDetailRow(Icons.school_rounded, 'Class', '${eventData!['year']} ${eventData!['branch']}'),
+                SizedBox(height: 16),
+                _buildDetailRow(
+                  Icons.people_rounded,
+                  'Total Checked In',
+                  participantCount.toString(),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: 24),
+          
+          // Participants Section
+          if (participantCount > 0) ...[
+            Text(
+              'Checked In Participants',
+              style: GoogleFonts.poppins(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: ThemeHelper.getTextPrimary(context),
+              ),
+            ),
+            SizedBox(height: 16),
+            Container(
+              decoration: BoxDecoration(
+                color: ThemeHelper.getCardColor(context),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: ThemeHelper.getShadowColor(context),
+                    blurRadius: 10,
+                    offset: Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: ListView.separated(
+                shrinkWrap: true,
+                physics: NeverScrollableScrollPhysics(),
+                itemCount: participants.length,
+                separatorBuilder: (context, index) => Divider(
+                  height: 1,
+                  color: ThemeHelper.getBorderColor(context),
+                ),
+                itemBuilder: (context, index) {
+                  return ListTile(
+                    leading: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        gradient: ThemeHelper.getPrimaryGradient(context),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${index + 1}',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                    title: Text(
+                      participants[index],
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: ThemeHelper.getTextPrimary(context),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ] else ...[
+            Container(
+              padding: EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: ThemeHelper.getCardColor(context),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: ThemeHelper.getBorderColor(context),
+                ),
+              ),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.people_outline_rounded,
+                    size: 48,
+                    color: ThemeHelper.getTextTertiary(context),
+                  ),
+                  SizedBox(height: 12),
+                  Text(
+                    'No participants checked in',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      color: ThemeHelper.getTextSecondary(context),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          SizedBox(height: 40),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 22,
+          color: ThemeHelper.getPrimaryColor(context),
+        ),
+        SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  color: ThemeHelper.getTextSecondary(context),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              SizedBox(height: 2),
+              Text(
+                value,
+                style: GoogleFonts.poppins(
+                  fontSize: 15,
+                  color: ThemeHelper.getTextPrimary(context),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:attendo/utils/theme_helper.dart';
@@ -128,6 +129,8 @@ class _CreateAttendanceScreenState extends State<CreateAttendanceScreen> {
       DatabaseReference dbRef = FirebaseDatabase.instance.ref().child("attendance_sessions");
       String sessionId = dbRef.push().key!;
 
+      final currentUser = FirebaseAuth.instance.currentUser;
+      
       await dbRef.child(sessionId).set({
         'subject': _subjectController.text.trim(),
         'date': DateFormat('dd MMM yyyy').format(selectedDate!),
@@ -137,6 +140,9 @@ class _CreateAttendanceScreenState extends State<CreateAttendanceScreen> {
         'division': selectedDivision,
         'type': selectedType,
         'created_at': DateTime.now().toIso8601String(),
+        'creator_uid': currentUser?.uid ?? 'unknown',
+        'creator_name': currentUser?.displayName ?? 'Unknown',
+        'creator_email': currentUser?.email ?? '',
         'students': {},
       });
 

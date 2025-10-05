@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "414422473305",
+    "firebase_url": "https://attendo-312ea-default-rtdb.firebaseio.com",
     "project_id": "attendo-312ea",
     "storage_bucket": "attendo-312ea.firebasestorage.app"
   },
@@ -12,7 +13,20 @@
           "package_name": "com.example.attendo"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "414422473305-ok8pgpugoohtco1nskoac0aail4kllc4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.attendo",
+            "certificate_hash": "6b9cbcd207c7ac1dfb3124264338a36f8a887ec1"
+          }
+        },
+        {
+          "client_id": "414422473305-l5su2stbf3q2nm6urmjfc6o3c5jpvk1u.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAzIU9gW4qMREjtnQ91FWfamvOnP2QlK4M"
@@ -20,7 +34,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "414422473305-l5su2stbf3q2nm6urmjfc6o3c5jpvk1u.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "414422473305-a421ertpl75e3acld8oqg5cm6qcoq3a3.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.attendo"
+              }
+            }
+          ]
         }
       }
     }

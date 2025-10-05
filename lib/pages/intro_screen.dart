@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:attendo/pages/home_screen_with_nav.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:attendo/services/auth_service.dart';
+import 'package:attendo/widgets/common_widgets.dart';
 
 class IntroScreen extends StatefulWidget {
   const IntroScreen({super.key});
@@ -13,6 +15,8 @@ class IntroScreen extends StatefulWidget {
 class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+  final AuthService _authService = AuthService();
+  bool _isLoading = false;
   
   late AnimationController _fadeController;
   late AnimationController _slideController;
@@ -79,14 +83,54 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
     }
   }
 
+  Future<void> _handleGoogleSignIn() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final userCredential = await _authService.signInWithGoogle();
+      
+      if (userCredential != null && mounted) {
+        // Show success message
+        EnhancedSnackBar.show(
+          context,
+          message: 'Welcome ${userCredential.user?.displayName ?? "User"}! 🎉',
+          type: SnackBarType.success,
+        );
+        
+        // Mark intro as seen and navigate to home
+        await Future.delayed(const Duration(milliseconds: 500));
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('intro_seen', true);
+        
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const HomeScreenWithNav()),
+            (route) => false,
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        EnhancedSnackBar.show(
+          context,
+          message: 'Sign in failed. Please try again.',
+          type: SnackBarType.error,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   void _nextPage() {
     if (_currentPage < 2) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOut,
       );
-    } else {
-      _completeIntro();
     }
   }
 
@@ -160,36 +204,107 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
                 
                 // Page Indicators
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(3, (index) => _buildDot(index)),
                   ),
                 ),
                 
-                // Next/Get Started Button
+                // Next/Sign In Button
                 Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _nextPage,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: _getButtonColor(_currentPage),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        elevation: 8,
-                        shadowColor: Colors.black.withOpacity(0.3),
-                      ),
-                      child: Text(
-                        _currentPage == 2 ? 'Get Started' : 'Next',
-                        style: GoogleFonts.poppins(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
+                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
+                  child: _currentPage == 2
+                      ? Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Google Sign-In Button
+                            SizedBox(
+                              width: double.infinity,
+                              height: 56,
+                              child: ElevatedButton(
+                                onPressed: _isLoading ? null : _handleGoogleSignIn,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: Colors.black87,
+                                  elevation: 8,
+                                  shadowColor: Colors.black.withOpacity(0.3),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                ),
+                                child: _isLoading
+                                    ? SizedBox(
+                                        height: 24,
+                                        width: 24,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 3,
+                                          valueColor: AlwaysStoppedAnimation<Color>(
+                                            _getButtonColor(_currentPage),
+                                          ),
+                                        ),
+                                      )
+                                    : Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Image.network(
+                                            'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
+                                            height: 22,
+                                            width: 22,
+                                            errorBuilder: (context, error, stackTrace) {
+                                              return Icon(
+                                                Icons.login_rounded,
+                                                size: 22,
+                                                color: _getButtonColor(_currentPage),
+                                              );
+                                            },
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Text(
+                                            'Sign in with Google',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.black87,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'We only access your name and email',
+                              style: GoogleFonts.poppins(
+                                fontSize: 11,
+                                color: Colors.white.withOpacity(0.8),
+                                fontStyle: FontStyle.italic,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        )
+                      : SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: _nextPage,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: _getButtonColor(_currentPage),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              elevation: 8,
+                              shadowColor: Colors.black.withOpacity(0.3),
+                            ),
+                            child: Text(
+                              'Next',
+                              style: GoogleFonts.poppins(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                  ),
                 ),
               ],
             ),
@@ -307,62 +422,65 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
       opacity: _fadeAnimation,
       child: SlideTransition(
         position: _slideAnimation,
-        child: Padding(
-          padding: const EdgeInsets.all(40),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              const SizedBox(height: 20),
               Container(
-                width: 200,
-                height: 200,
+                width: 160,
+                height: 160,
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.2),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
                   Icons.rocket_launch_rounded,
-                  size: 100,
+                  size: 80,
                   color: Colors.white,
                 ),
               ),
-              const SizedBox(height: 48),
+              const SizedBox(height: 32),
               Text(
                 'Ready to Begin?',
                 style: GoogleFonts.poppins(
-                  fontSize: 32,
+                  fontSize: 28,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                   height: 1.2,
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               Text(
                 'Create your first session, share with students, and experience seamless classroom management',
                 style: GoogleFonts.poppins(
-                  fontSize: 16,
+                  fontSize: 14,
                   color: Colors.white.withOpacity(0.9),
-                  height: 1.6,
+                  height: 1.5,
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 28),
               Container(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     _buildBenefitRow(Icons.flash_on_rounded, 'Instant Setup'),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
                     _buildBenefitRow(Icons.link_rounded, 'Share via Link'),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
                     _buildBenefitRow(Icons.cloud_done_rounded, 'Real-time Sync'),
                   ],
                 ),
               ),
+              const SizedBox(height: 20),
             ],
           ),
         ),

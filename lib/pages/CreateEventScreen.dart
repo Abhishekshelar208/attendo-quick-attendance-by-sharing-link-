@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:attendo/utils/theme_helper.dart';
@@ -144,6 +145,8 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       print('   Venue: ${_venueController.text}');
       print('   Session ID: $sessionId');
 
+      final currentUser = FirebaseAuth.instance.currentUser;
+
       Map<String, dynamic> eventData = {
         'event_name': _eventNameController.text.trim(),
         'venue': _venueController.text.trim(),
@@ -154,6 +157,9 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
         'division': selectedDivision,
         'input_type': selectedInputType,
         'created_at': DateTime.now().toIso8601String(),
+        'creator_uid': currentUser?.uid ?? 'unknown',
+        'creator_name': currentUser?.displayName ?? 'Unknown',
+        'creator_email': currentUser?.email ?? '',
         'status': 'active', // active, ended
         'participants': {},
       };
