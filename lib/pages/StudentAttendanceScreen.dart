@@ -230,7 +230,7 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
         backgroundColor: ThemeHelper.getBackgroundColor(context),
         appBar: AppBar(
           title: Text(
-            "Mark Attendance.",
+            "Mark Attendance",
             style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
           ),
           automaticallyImplyLeading: false,

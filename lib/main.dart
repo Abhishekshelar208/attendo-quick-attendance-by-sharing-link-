@@ -2,6 +2,7 @@
 // for a quick attendance
 
 import 'package:attendo/pages/StudentAttendanceScreen.dart';
+import 'package:attendo/pages/StudentEventCheckInScreen.dart';
 import 'package:attendo/pages/home_screen_with_nav.dart';
 import 'package:attendo/pages/intro_screen.dart';
 import 'package:flutter/material.dart';
@@ -172,12 +173,21 @@ class MyApp extends StatelessWidget {
         
         Uri uri = Uri.parse(settings.name ?? '');
         
-        // Check for session route first
+        // Check for session route (classroom attendance)
         if (uri.pathSegments.length >= 2 && uri.pathSegments[0] == 'session') {
           String sessionId = uri.pathSegments[1];
           print('📱 Opening session: $sessionId');
           return MaterialPageRoute(
             builder: (context) => StudentAttendanceScreen(sessionId: sessionId),
+          );
+        }
+        
+        // Check for event route
+        if (uri.pathSegments.length >= 2 && uri.pathSegments[0] == 'event') {
+          String sessionId = uri.pathSegments[1];
+          print('🎉 Opening event: $sessionId');
+          return MaterialPageRoute(
+            builder: (context) => StudentEventCheckInScreen(sessionId: sessionId),
           );
         }
         
@@ -209,7 +219,7 @@ class _SplashCheckerState extends State<SplashChecker> {
       final currentUrl = Uri.base.toString();
       print('🌍 Initial URL: $currentUrl');
       
-      // Check for session in hash fragment
+      // Check for session in hash fragment (classroom attendance)
       if (currentUrl.contains('#/session/')) {
         final hashPart = Uri.base.fragment;
         print('🔗 Hash fragment: $hashPart');
@@ -225,6 +235,29 @@ class _SplashCheckerState extends State<SplashChecker> {
               context,
               MaterialPageRoute(
                 builder: (context) => StudentAttendanceScreen(sessionId: sessionId!),
+              ),
+            );
+            return;
+          }
+        }
+      }
+      
+      // Check for event in hash fragment
+      if (currentUrl.contains('#/event/')) {
+        final hashPart = Uri.base.fragment;
+        print('🔗 Hash fragment: $hashPart');
+        
+        // Extract event ID from #/event/XXXXX
+        final match = RegExp(r'#/event/([^/]+)').firstMatch(currentUrl);
+        if (match != null) {
+          final eventId = match.group(1);
+          print('✅ Found event ID: $eventId');
+          
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => StudentEventCheckInScreen(sessionId: eventId!),
               ),
             );
             return;

@@ -4,6 +4,10 @@ import 'package:share_plus/share_plus.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:attendo/utils/theme_helper.dart';
 import 'package:flutter/services.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:printing/printing.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
 
 class ShareAttendanceScreen extends StatefulWidget {
   final String sessionId;
@@ -92,7 +96,7 @@ class _ShareAttendanceScreenState extends State<ShareAttendanceScreen> {
     );
   }
 
-  void exportAttendance() {
+  void exportAttendanceText() {
     DateTime now = DateTime.now();
     String formattedDate = "${now.day.toString().padLeft(2, '0')} ${_getMonthName(now.month)} ${now.year}";
     String formattedTime = "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
@@ -110,6 +114,72 @@ class _ShareAttendanceScreenState extends State<ShareAttendanceScreen> {
     report += "https://attendo-312ea.web.app/#/session/${widget.sessionId}";
     
     Share.share(report, subject: "Attendance Report - $lectureName");
+  }
+
+  void exportAttendancePDF() async {
+    if (lectureName == null) return;
+
+    final pdf = pw.Document();
+    DateTime now = DateTime.now();
+    String formattedDate = "${now.day.toString().padLeft(2, '0')} ${_getMonthName(now.month)} ${now.year}";
+    String formattedTime = "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.a4,
+        build: (pw.Context context) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                'Classroom Attendance Report',
+                style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
+              ),
+              pw.SizedBox(height: 20),
+              pw.Text('Subject: $lectureName', style: pw.TextStyle(fontSize: 16)),
+              pw.Text('Date: $formattedDate', style: pw.TextStyle(fontSize: 14)),
+              pw.Text('Time: $formattedTime', style: pw.TextStyle(fontSize: 14)),
+              if (year != null) pw.Text('Year: $year', style: pw.TextStyle(fontSize: 14)),
+              if (branch != null) pw.Text('Branch: $branch', style: pw.TextStyle(fontSize: 14)),
+              pw.SizedBox(height: 20),
+              pw.Divider(),
+              pw.SizedBox(height: 10),
+              pw.Text('Total Present: ${markedStudents.length}',
+                  style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+              pw.SizedBox(height: 10),
+              pw.Divider(),
+              pw.SizedBox(height: 10),
+              pw.Text('Student Roll Numbers:', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
+              pw.SizedBox(height: 10),
+              ...markedStudents.asMap().entries.map((entry) {
+                int index = entry.key + 1;
+                String rollNo = entry.value;
+                return pw.Padding(
+                  padding: pw.EdgeInsets.only(bottom: 5),
+                  child: pw.Text('$index. $rollNo', style: pw.TextStyle(fontSize: 14)),
+                );
+              }).toList(),
+              pw.SizedBox(height: 30),
+              pw.Divider(),
+              pw.SizedBox(height: 10),
+              pw.Text(
+                'Session Link: https://attendo-312ea.web.app/#/session/${widget.sessionId}',
+                style: pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+              ),
+              pw.Text(
+                'Generated on: $formattedDate at $formattedTime',
+                style: pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    await Printing.sharePdf(
+      bytes: await pdf.save(),
+      filename: 'Attendance_${lectureName}_$formattedDate.pdf',
+    );
   }
   
   String _getMonthName(int month) {
@@ -143,6 +213,12 @@ class _ShareAttendanceScreenState extends State<ShareAttendanceScreen> {
               // Live Count Card
               _buildLiveCountCard(context),
               const SizedBox(height: 20),
+
+              // QR Code Section
+              if (!isEnded) ...[
+                _buildQRCodeCard(context, sessionLink),
+                const SizedBox(height: 20),
+              ],
 
               // Share Link Section
               if (!isEnded) ...[
@@ -226,12 +302,28 @@ class _ShareAttendanceScreenState extends State<ShareAttendanceScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                _buildActionButton(
-                  context,
-                  label: 'Export Attendance',
-                  icon: Icons.download_rounded,
-                  color: ThemeHelper.getSuccessColor(context),
-                  onPressed: exportAttendance,
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildActionButton(
+                        context,
+                        label: 'Export PDF',
+                        icon: Icons.picture_as_pdf_rounded,
+                        color: ThemeHelper.getSuccessColor(context),
+                        onPressed: exportAttendancePDF,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildActionButton(
+                        context,
+                        label: 'Export Text',
+                        icon: Icons.text_snippet_rounded,
+                        color: ThemeHelper.getPrimaryColor(context),
+                        onPressed: exportAttendanceText,
+                      ),
+                    ),
+                  ],
                 ),
               ],
               const SizedBox(height: 24),
@@ -401,6 +493,76 @@ class _ShareAttendanceScreenState extends State<ShareAttendanceScreen> {
                   ],
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQRCodeCard(BuildContext context, String link) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: ThemeHelper.getCardColor(context),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: ThemeHelper.getShadowColor(context),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.qr_code_2_rounded,
+                color: ThemeHelper.getPrimaryColor(context),
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Scan QR Code to Join',
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: ThemeHelper.getTextPrimary(context),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: QrImageView(
+              data: link,
+              version: QrVersions.auto,
+              size: 200,
+              backgroundColor: Colors.white,
+              errorCorrectionLevel: QrErrorCorrectLevel.M,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Students can scan this code',
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              color: ThemeHelper.getTextSecondary(context),
             ),
           ),
         ],

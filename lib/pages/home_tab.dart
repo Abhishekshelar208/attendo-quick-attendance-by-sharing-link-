@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:attendo/pages/CreateAttendanceScreen.dart';
+import 'package:attendo/pages/CreateEventScreen.dart';
 import 'package:attendo/utils/theme_helper.dart';
+import 'package:attendo/utils/animation_helper.dart';
+import 'package:attendo/widgets/common_widgets.dart';
 
 class HomeTab extends StatelessWidget {
   const HomeTab({super.key});
@@ -12,7 +15,7 @@ class HomeTab extends StatelessWidget {
       appBar: AppBar(
         title: Text(
           'QuickPro',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+          style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 28),
         ),
         actions: [
           IconButton(
@@ -70,7 +73,9 @@ class HomeTab extends StatelessWidget {
   }
 
   Widget _buildWelcomeCard(BuildContext context) {
-    return Container(
+    return SlideInWidget(
+      delay: const Duration(milliseconds: 100),
+      child: Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: ThemeHelper.getPrimaryGradient(context),
@@ -155,6 +160,7 @@ class HomeTab extends StatelessWidget {
           ),
         ],
       ),
+      ),
     );
   }
 
@@ -162,22 +168,30 @@ class HomeTab extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: _buildStatCard(
-            context,
-            icon: Icons.event_rounded,
-            label: 'Total Sessions',
-            value: '0',
-            color: ThemeHelper.getPrimaryColor(context),
+          child: SlideInWidget(
+            delay: const Duration(milliseconds: 200),
+            begin: const Offset(-0.2, 0),
+            child: _buildStatCard(
+              context,
+              icon: Icons.event_rounded,
+              label: 'Total Sessions',
+              value: '0',
+              color: ThemeHelper.getPrimaryColor(context),
+            ),
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _buildStatCard(
-            context,
-            icon: Icons.people_rounded,
-            label: 'Students',
-            value: '0',
-            color: ThemeHelper.getSuccessColor(context),
+          child: SlideInWidget(
+            delay: const Duration(milliseconds: 300),
+            begin: const Offset(0.2, 0),
+            child: _buildStatCard(
+              context,
+              icon: Icons.people_rounded,
+              label: 'Students',
+              value: '0',
+              color: ThemeHelper.getSuccessColor(context),
+            ),
           ),
         ),
       ],
@@ -250,7 +264,7 @@ class HomeTab extends StatelessWidget {
         'label': 'Event\nAttendance',
         'subtitle': 'Manage event check-ins',
         'color': const Color(0xffec4899),
-        'available': false,
+        'available': true,
       },
       {
         'icon': Icons.quiz_rounded,
@@ -276,16 +290,21 @@ class HomeTab extends StatelessWidget {
     ];
 
     return Column(
-      children: features.map((feature) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: _buildFeatureCard(
+      children: features.asMap().entries.map((entry) {
+        int index = entry.key;
+        Map<String, dynamic> feature = entry.value;
+        return SlideInWidget(
+          delay: Duration(milliseconds: 400 + (index * 80)),
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _buildFeatureCard(
             context,
             icon: feature['icon'] as IconData,
             label: feature['label'] as String,
             subtitle: feature['subtitle'] as String,
             color: feature['color'] as Color,
             available: feature['available'] as bool,
+          ),
           ),
         );
       }).toList(),
@@ -348,18 +367,27 @@ class HomeTab extends StatelessWidget {
     required Color color,
     required bool available,
   }) {
-    return InkWell(
+    return BouncingWidget(
       onTap: available
           ? () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => CreateAttendanceScreen(),
-                ),
-              );
+              // Navigate based on feature with smooth transition
+              if (label.contains('Classroom')) {
+                Navigator.push(
+                  context,
+                  SmoothPageRoute(
+                    page: CreateAttendanceScreen(),
+                  ),
+                );
+              } else if (label.contains('Event')) {
+                Navigator.push(
+                  context,
+                  SmoothPageRoute(
+                    page: CreateEventScreen(),
+                  ),
+                );
+              }
             }
           : null,
-      borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -463,8 +491,10 @@ class HomeTab extends StatelessWidget {
 
   Widget _buildRecentSessionsList(BuildContext context) {
     // TODO: Fetch real data from Firebase
-    return Container(
-      padding: const EdgeInsets.all(20),
+    return FadeInWidget(
+      delay: const Duration(milliseconds: 600),
+      child: Container(
+        padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: ThemeHelper.getCardColor(context),
         borderRadius: BorderRadius.circular(16),
@@ -502,6 +532,7 @@ class HomeTab extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
         ],
+      ),
       ),
     );
   }
