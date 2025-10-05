@@ -3,6 +3,7 @@
 
 import 'package:attendo/pages/StudentAttendanceScreen.dart';
 import 'package:attendo/pages/StudentEventCheckInScreen.dart';
+import 'package:attendo/pages/StudentQuizEntryScreen.dart';
 import 'package:attendo/pages/home_screen_with_nav.dart';
 import 'package:attendo/pages/intro_screen.dart';
 import 'package:attendo/pages/LoginScreen.dart';
@@ -194,6 +195,15 @@ class MyApp extends StatelessWidget {
           );
         }
         
+        // Check for quiz route
+        if (uri.pathSegments.length >= 2 && uri.pathSegments[0] == 'quiz') {
+          String quizId = uri.pathSegments[1];
+          print('🎯 Opening quiz: $quizId');
+          return MaterialPageRoute(
+            builder: (context) => StudentQuizEntryScreen(quizId: quizId),
+          );
+        }
+        
         return null;
       },
     );
@@ -263,6 +273,29 @@ class _SplashCheckerState extends State<SplashChecker> {
               context,
               MaterialPageRoute(
                 builder: (context) => StudentEventCheckInScreen(sessionId: eventId!),
+              ),
+            );
+            return;
+          }
+        }
+      }
+      
+      // Check for quiz in hash fragment
+      if (currentUrl.contains('#/quiz/')) {
+        final hashPart = Uri.base.fragment;
+        print('🔗 Hash fragment: $hashPart');
+        
+        // Extract quiz ID from #/quiz/XXXXX
+        final match = RegExp(r'#/quiz/([^/]+)').firstMatch(currentUrl);
+        if (match != null) {
+          final quizId = match.group(1);
+          print('✅ Found quiz ID: $quizId');
+          
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => StudentQuizEntryScreen(quizId: quizId!),
               ),
             );
             return;

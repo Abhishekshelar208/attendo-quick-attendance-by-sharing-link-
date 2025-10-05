@@ -38,6 +38,7 @@ dependencies:
   firebase_auth: ^6.1.0
   google_sign_in: ^6.2.1
   firebase_database: ^12.0.2
+  google_generative_ai: ^0.4.7
   firebase_storage: ^13.0.2
   fluttertoast: ^9.0.0
   google_nav_bar: ^5.0.6
@@ -65,6 +66,8 @@ dependencies:
   path_provider: ^2.1.4
   printing: ^5.13.3
   file_picker: ^10.3.3
+  csv: ^6.0.0
+
 
 dev_dependencies:
   flutter_test:

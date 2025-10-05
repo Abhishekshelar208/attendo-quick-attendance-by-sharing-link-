@@ -5,6 +5,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:attendo/pages/StudentViewAttendanceScreen.dart';
 import 'package:attendo/pages/EventViewParticipantsScreen.dart';
+import 'package:attendo/pages/QuizReportScreen.dart';
 
 class HistoryTab extends StatefulWidget {
   const HistoryTab({super.key});
@@ -19,7 +20,7 @@ class _HistoryTabState extends State<HistoryTab> {
   
   List<Map<String, dynamic>> historyItems = [];
   bool isLoading = true;
-  String filter = 'all'; // all, attendance, events
+  String filter = 'all'; // all, attendance, events, quiz
 
   @override
   void initState() {
@@ -80,6 +81,32 @@ class _HistoryTabState extends State<HistoryTab> {
               'branch': session['branch'] ?? '',
               'division': session['division'] ?? '',
               'count': (session['participants'] as Map?)?.length ?? 0,
+              'created_at': session['created_at'] ?? '',
+            });
+          }
+        });
+      }
+
+      // Fetch ended quiz sessions
+      final quizSnapshot = await _dbRef.child('quiz_sessions').get();
+      if (quizSnapshot.exists) {
+        final data = quizSnapshot.value as Map<dynamic, dynamic>;
+        data.forEach((key, value) {
+          final session = Map<String, dynamic>.from(value as Map);
+          if (session['creator_uid'] == currentUser.uid && 
+              session['status'] == 'ended') {
+            items.add({
+              'id': key,
+              'type': 'quiz',
+              'title': session['quiz_name'] ?? 'Untitled Quiz',
+              'description': session['description'] ?? '',
+              'date': session['date'] ?? '',
+              'time': session['time'] ?? '',
+              'year': session['year'] ?? '',
+              'branch': session['branch'] ?? '',
+              'division': session['division'] ?? '',
+              'count': (session['participants'] as Map?)?.length ?? 0,
+              'questions': (session['questions'] as List?)?.length ?? 0,
               'created_at': session['created_at'] ?? '',
             });
           }
@@ -153,6 +180,16 @@ class _HistoryTabState extends State<HistoryTab> {
                   ],
                 ),
               ),
+              PopupMenuItem(
+                value: 'quiz',
+                child: Row(
+                  children: [
+                    Icon(Icons.quiz_rounded, size: 20),
+                    SizedBox(width: 12),
+                    Text('Quizzes', style: GoogleFonts.poppins()),
+                  ],
+                ),
+              ),
             ],
           ),
           IconButton(
@@ -189,7 +226,7 @@ class _HistoryTabState extends State<HistoryTab> {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          'Your ended attendance sessions\nand events will appear here',
+                          'Your ended attendance sessions,\nevents, and quizzes will appear here',
                           style: GoogleFonts.poppins(
                             fontSize: 15,
                             color: ThemeHelper.getTextSecondary(context),
@@ -215,11 +252,27 @@ class _HistoryTabState extends State<HistoryTab> {
   }
 
   Widget _buildHistoryCard(BuildContext context, Map<String, dynamic> item) {
-    final isAttendance = item['type'] == 'attendance';
-    final icon = isAttendance ? Icons.school_rounded : Icons.event_rounded;
-    final color = isAttendance 
-        ? ThemeHelper.getPrimaryColor(context) 
-        : ThemeHelper.getSecondaryColor(context);
+    final type = item['type'];
+    IconData icon;
+    Color color;
+    
+    switch (type) {
+      case 'attendance':
+        icon = Icons.school_rounded;
+        color = ThemeHelper.getPrimaryColor(context);
+        break;
+      case 'event':
+        icon = Icons.event_rounded;
+        color = ThemeHelper.getSecondaryColor(context);
+        break;
+      case 'quiz':
+        icon = Icons.quiz_rounded;
+        color = Colors.deepPurple;
+        break;
+      default:
+        icon = Icons.help_rounded;
+        color = Colors.grey;
+    }
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -227,7 +280,7 @@ class _HistoryTabState extends State<HistoryTab> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         onTap: () {
-          if (isAttendance) {
+          if (type == 'attendance') {
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -236,12 +289,21 @@ class _HistoryTabState extends State<HistoryTab> {
                 ),
               ),
             );
-          } else {
+          } else if (type == 'event') {
             Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (_) => EventViewParticipantsScreen(
                   sessionId: item['id'],
+                ),
+              ),
+            );
+          } else if (type == 'quiz') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => QuizReportScreen(
+                  quizId: item['id'],
                 ),
               ),
             );
@@ -278,7 +340,7 @@ class _HistoryTabState extends State<HistoryTab> {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        if (!isAttendance && item['venue'] != '')
+                        if (type == 'event' && item['venue'] != '')
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
                             child: Row(
@@ -300,6 +362,19 @@ class _HistoryTabState extends State<HistoryTab> {
                                   ),
                                 ),
                               ],
+                            ),
+                          ),
+                        if (type == 'quiz' && item['description'] != '')
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              item['description'],
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                color: ThemeHelper.getTextSecondary(context),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                       ],
@@ -344,8 +419,16 @@ class _HistoryTabState extends State<HistoryTab> {
                   _buildInfoChip(
                     context,
                     Icons.groups_rounded,
-                    '${item['count']} ${isAttendance ? "Present" : "Participants"}',
+                    '${item['count']} ${type == 'attendance' ? "Present" : "Participants"}',
                   ),
+                  if (type == 'quiz')
+                    const SizedBox(width: 8),
+                  if (type == 'quiz')
+                    _buildInfoChip(
+                      context,
+                      Icons.question_answer_rounded,
+                      '${item['questions']} Questions',
+                    ),
                   const Spacer(),
                   Text(
                     '${item['year']} ${item['branch']}-${item['division']}',

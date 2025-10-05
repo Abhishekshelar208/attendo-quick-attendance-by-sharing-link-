@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:attendo/pages/CreateAttendanceScreen.dart';
 import 'package:attendo/pages/CreateEventScreen.dart';
+import 'package:attendo/pages/CreateQuizScreen.dart';
 import 'package:attendo/utils/theme_helper.dart';
 import 'package:attendo/utils/animation_helper.dart';
 import 'package:attendo/widgets/common_widgets.dart';
@@ -271,7 +272,7 @@ class HomeTab extends StatelessWidget {
         'label': 'Live\nQuiz',
         'subtitle': 'Interactive assessments',
         'color': const Color(0xff8b5cf6),
-        'available': false,
+        'available': true,
       },
       {
         'icon': Icons.feedback_rounded,
@@ -383,6 +384,13 @@ class HomeTab extends StatelessWidget {
                   context,
                   SmoothPageRoute(
                     page: CreateEventScreen(),
+                  ),
+                );
+              } else if (label.contains('Quiz')) {
+                Navigator.push(
+                  context,
+                  SmoothPageRoute(
+                    page: const CreateQuizScreen(),
                   ),
                 );
               }
