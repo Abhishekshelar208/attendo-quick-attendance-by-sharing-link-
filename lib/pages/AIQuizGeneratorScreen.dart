@@ -33,7 +33,7 @@ class _AIQuizGeneratorScreenState extends State<AIQuizGeneratorScreen> {
 
   // TODO: Replace with your Gemini API Key
   // Get it from: https://makersuite.google.com/app/apikey
-  static const String GEMINI_API_KEY = 'YOUR_API_KEY_HERE';
+  static const String GEMINI_API_KEY = 'AIzaSyAjpqxtmsOxHzQVS2yiv3wem6pqjZ6KSt8';
 
   Future<void> _generateWithAI() async {
     if (!_formKey.currentState!.validate()) {
