@@ -16,6 +16,7 @@ class AuthService {
   Future<UserCredential?> signInWithGoogle() async {
     try {
       print('🔐 Starting Google Sign-In...');
+      print('📱 Platform: ${kIsWeb ? "Web" : "Mobile"}');
 
       UserCredential userCredential;
 
@@ -23,34 +24,56 @@ class AuthService {
         print('🌍 Using web Google sign-in');
         // Web platform - use popup
         final GoogleAuthProvider googleProvider = GoogleAuthProvider();
+        googleProvider.setCustomParameters({
+          'prompt': 'select_account',
+        });
         userCredential = await _auth.signInWithPopup(googleProvider);
       } else {
-        print('📱 Using mobile Google sign-in');
+        print('📱 Using mobile Google sign-in with native provider flow');
         // Mobile platform (Android/iOS) - use native provider flow
         final GoogleAuthProvider googleProvider = GoogleAuthProvider();
+        googleProvider.setCustomParameters({
+          'prompt': 'select_account',
+        });
+        
+        print('🔑 Calling signInWithProvider...');
         userCredential = await _auth.signInWithProvider(googleProvider);
+        print('✅ signInWithProvider completed');
       }
 
       User? user = userCredential.user;
-      print('👤 Google user: ${user?.email}');
+      print('👤 User from credential: ${user?.email}');
 
       if (user != null) {
         print('✅ Firebase sign-in successful!');
         print('   User: ${user.displayName}');
         print('   Email: ${user.email}');
         print('   UID: ${user.uid}');
+        print('   Photo: ${user.photoURL}');
 
         // Save user data to Realtime Database
+        print('💾 Saving user data to database...');
         await _saveUserData(user);
+        print('✅ User data saved');
+
+        // Verify current user is set
+        final currentUser = _auth.currentUser;
+        print('👤 Current user after sign-in: ${currentUser?.email}');
 
         return userCredential;
       } else {
         print('❌ Google sign-in returned null user');
         return null;
       }
-    } catch (e) {
+    } on FirebaseAuthException catch (e) {
+      print('❌ FirebaseAuthException: ${e.code}');
+      print('❌ Message: ${e.message}');
+      print('❌ Details: ${e.toString()}');
+      rethrow;
+    } catch (e, stackTrace) {
       print('❌ Error signing in with Google: $e');
-      print('❌ Error stack trace: ${StackTrace.current}');
+      print('❌ Error type: ${e.runtimeType}');
+      print('❌ Stack trace: $stackTrace');
       rethrow;
     }
   }

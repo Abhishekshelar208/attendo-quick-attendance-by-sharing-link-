@@ -219,11 +219,36 @@ class SplashChecker extends StatefulWidget {
 
 class _SplashCheckerState extends State<SplashChecker> {
   final AuthService _authService = AuthService();
+  bool _hasNavigated = false;
   
   @override
   void initState() {
     super.initState();
     _checkFirstLaunch();
+    
+    // Listen for auth state changes
+    _authService.authStateChanges.listen((User? user) {
+      if (user != null && !_hasNavigated) {
+        print('✅ Auth state changed: User signed in - ${user.email}');
+        // User just signed in, ensure we're on the home screen
+        _navigateToHome();
+      }
+    });
+  }
+  
+  Future<void> _navigateToHome() async {
+    if (_hasNavigated) return;
+    _hasNavigated = true;
+    
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('intro_seen', true);
+    
+    if (mounted) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const HomeScreenWithNav()),
+        (route) => false,
+      );
+    }
   }
 
   Future<void> _checkFirstLaunch() async {

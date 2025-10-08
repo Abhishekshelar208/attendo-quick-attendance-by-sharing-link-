@@ -3,6 +3,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'dart:math';
 import 'package:attendo/utils/theme_helper.dart';
 import 'ShareAttendanceScreen.dart';
 
@@ -21,6 +22,7 @@ class _CreateAttendanceScreenState extends State<CreateAttendanceScreen> {
   DateTime? selectedDate;
   TimeOfDay? selectedTime;
   String selectedType = "Roll Number";
+  bool bluetoothAttendance = false; // Default to false (disabled)
 
   final List<String> years = ['2nd Year', '3rd Year', '4th Year'];
   final List<String> branches = ['CO', 'IT', 'AIDS'];
@@ -131,6 +133,9 @@ class _CreateAttendanceScreenState extends State<CreateAttendanceScreen> {
 
       final currentUser = FirebaseAuth.instance.currentUser;
       
+      // Generate random 4-digit OTP
+      String otp = (Random().nextInt(9000) + 1000).toString();
+      
       await dbRef.child(sessionId).set({
         'subject': _subjectController.text.trim(),
         'date': DateFormat('dd MMM yyyy').format(selectedDate!),
@@ -139,11 +144,17 @@ class _CreateAttendanceScreenState extends State<CreateAttendanceScreen> {
         'branch': selectedBranch,
         'division': selectedDivision,
         'type': selectedType,
+        'bluetooth_enabled': bluetoothAttendance, // NEW: Bluetooth toggle
         'created_at': DateTime.now().toIso8601String(),
         'creator_uid': currentUser?.uid ?? 'unknown',
         'creator_name': currentUser?.displayName ?? 'Unknown',
         'creator_email': currentUser?.email ?? '',
         'students': {},
+        'otp': otp,
+        'otp_active': false,
+        'otp_start_time': null,
+        'bluetooth_active': false, // NEW: For when Bluetooth is activated
+        'cheating_flags': {},
       });
 
       Navigator.pop(context); // Close loading dialog
@@ -405,6 +416,12 @@ class _CreateAttendanceScreenState extends State<CreateAttendanceScreen> {
                 _buildSectionLabel(context, "Attendance Type", true),
                 SizedBox(height: 8),
                 _buildTypeSelector(context),
+                SizedBox(height: 24),
+
+                // Bluetooth Attendance Toggle
+                _buildSectionLabel(context, "Bluetooth Attendance", false),
+                SizedBox(height: 8),
+                _buildBluetoothToggle(context),
                 SizedBox(height: 40),
 
                 // Create Button
@@ -688,6 +705,288 @@ class _CreateAttendanceScreenState extends State<CreateAttendanceScreen> {
           ),
         );
       }).toList(),
+    );
+  }
+
+  void _showBluetoothConfirmationDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: ThemeHelper.getPrimaryColor(context).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.bluetooth_rounded,
+                  color: ThemeHelper.getPrimaryColor(context),
+                  size: 28,
+                ),
+              ),
+              SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  'Enable Bluetooth?',
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: ThemeHelper.getTextPrimary(context),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Are you sure you want to enable Bluetooth proximity verification?',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: ThemeHelper.getTextSecondary(context),
+                  height: 1.5,
+                ),
+              ),
+              SizedBox(height: 16),
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.blue.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      color: Colors.blue,
+                      size: 20,
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Students will need to physically connect to your device to mark attendance.',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: Colors.blue.shade700,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+              child: Text(
+                'Cancel',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: ThemeHelper.getTextSecondary(context),
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                setState(() {
+                  bluetoothAttendance = true;
+                });
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ThemeHelper.getPrimaryColor(context),
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text(
+                'Yes, Enable',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildBluetoothToggle(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: ThemeHelper.getCardColor(context),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: bluetoothAttendance 
+              ? ThemeHelper.getPrimaryColor(context).withValues(alpha: 0.3)
+              : ThemeHelper.getBorderColor(context),
+          width: bluetoothAttendance ? 2 : 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: bluetoothAttendance 
+                ? ThemeHelper.getPrimaryColor(context).withValues(alpha: 0.1)
+                : Colors.black.withValues(alpha: 0.02),
+            blurRadius: bluetoothAttendance ? 8 : 4,
+            offset: Offset(0, bluetoothAttendance ? 4 : 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: bluetoothAttendance 
+                      ? ThemeHelper.getPrimaryColor(context).withValues(alpha: 0.1)
+                      : Colors.grey.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  bluetoothAttendance 
+                      ? Icons.bluetooth_rounded 
+                      : Icons.bluetooth_disabled_rounded,
+                  color: bluetoothAttendance 
+                      ? ThemeHelper.getPrimaryColor(context)
+                      : Colors.grey,
+                  size: 24,
+                ),
+              ),
+              SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Bluetooth Proximity Check',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: ThemeHelper.getTextPrimary(context),
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      bluetoothAttendance 
+                          ? 'Students must be near you to mark attendance'
+                          : 'Only OTP verification required',
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        color: ThemeHelper.getTextSecondary(context),
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch.adaptive(
+                value: bluetoothAttendance,
+                onChanged: (value) {
+                  if (value) {
+                    // Show confirmation dialog when enabling
+                    _showBluetoothConfirmationDialog(context);
+                  } else {
+                    // Disable directly without confirmation
+                    setState(() {
+                      bluetoothAttendance = value;
+                    });
+                  }
+                },
+                activeColor: ThemeHelper.getPrimaryColor(context),
+                activeTrackColor: ThemeHelper.getPrimaryColor(context).withValues(alpha: 0.3),
+              ),
+            ],
+          ),
+          if (bluetoothAttendance) ...[
+            SizedBox(height: 16),
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Colors.blue.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: Colors.blue,
+                    size: 20,
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Your device will be renamed to "Attendo: Teachers Device" when activated',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: Colors.blue.shade700,
+                        height: 1.3,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ] else ...[
+            SizedBox(height: 16),
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Colors.orange.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    color: Colors.orange,
+                    size: 20,
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Students can mark attendance from anywhere with just OTP',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: Colors.orange.shade700,
+                        height: 1.3,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

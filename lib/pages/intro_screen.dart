@@ -84,43 +84,72 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
   }
 
   Future<void> _handleGoogleSignIn() async {
+    if (_isLoading) return; // Prevent multiple taps
+    
     setState(() => _isLoading = true);
+    print('📱 Starting Google Sign-In from intro screen...');
 
     try {
       final userCredential = await _authService.signInWithGoogle();
+      print('👤 User credential received: ${userCredential?.user?.email}');
       
-      if (userCredential != null && mounted) {
-        // Show success message
-        EnhancedSnackBar.show(
-          context,
-          message: 'Welcome ${userCredential.user?.displayName ?? "User"}! 🎉',
-          type: SnackBarType.success,
-        );
+      if (userCredential != null && userCredential.user != null) {
+        print('✅ Sign-in successful! User: ${userCredential.user!.displayName}');
         
-        // Mark intro as seen and navigate to home
-        await Future.delayed(const Duration(milliseconds: 500));
+        // Mark intro as seen FIRST
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool('intro_seen', true);
+        print('✅ Intro marked as seen');
         
         if (mounted) {
-          Navigator.pushAndRemoveUntil(
+          // Show success message
+          EnhancedSnackBar.show(
             context,
-            MaterialPageRoute(builder: (_) => const HomeScreenWithNav()),
-            (route) => false,
+            message: 'Welcome ${userCredential.user?.displayName ?? "User"}! 🎉',
+            type: SnackBarType.success,
+          );
+          
+          // Small delay for user to see the success message
+          await Future.delayed(const Duration(milliseconds: 800));
+          
+          print('🛣️ Navigating to home screen...');
+          
+          if (mounted) {
+            // Force navigation with pushAndRemoveUntil to clear all previous routes
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(
+                builder: (context) => const HomeScreenWithNav(),
+              ),
+              (route) => false, // Remove all previous routes
+            );
+            print('✅ Navigation to home completed');
+          }
+        }
+      } else {
+        print('❌ Sign-in returned null user credential');
+        if (mounted) {
+          EnhancedSnackBar.show(
+            context,
+            message: 'Sign in cancelled or failed',
+            type: SnackBarType.error,
           );
         }
       }
     } catch (e) {
+      print('❌ Sign in error: $e');
+      print('❌ Stack trace: ${StackTrace.current}');
+      
       if (mounted) {
         EnhancedSnackBar.show(
           context,
-          message: 'Sign in failed. Please try again.',
+          message: 'Sign in failed: ${e.toString()}',
           type: SnackBarType.error,
         );
       }
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
+        print('🏁 Sign-in flow completed');
       }
     }
   }
@@ -370,16 +399,17 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
       opacity: _fadeAnimation,
       child: SlideTransition(
         position: _slideAnimation,
-        child: Padding(
-          padding: const EdgeInsets.all(40),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              const SizedBox(height: 20),
               // Feature Cards Grid
               Wrap(
                 alignment: WrapAlignment.center,
-                spacing: 20,
-                runSpacing: 20,
+                spacing: 16,
+                runSpacing: 16,
                 children: [
                   _buildFeatureCard(Icons.event_available_rounded, 'Attendance'),
                   _buildFeatureCard(Icons.quiz_rounded, 'Quizzes'),
@@ -389,27 +419,28 @@ class _IntroScreenState extends State<IntroScreen> with TickerProviderStateMixin
                   _buildFeatureCard(Icons.analytics_rounded, 'Analytics'),
                 ],
               ),
-              const SizedBox(height: 48),
+              const SizedBox(height: 36),
               Text(
                 'Everything You Need',
                 style: GoogleFonts.poppins(
-                  fontSize: 32,
+                  fontSize: 28,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                   height: 1.2,
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               Text(
                 'From tracking attendance to hosting quizzes and collecting instant feedback - we\'ve got you covered',
                 style: GoogleFonts.poppins(
-                  fontSize: 16,
+                  fontSize: 15,
                   color: Colors.white.withOpacity(0.9),
-                  height: 1.6,
+                  height: 1.5,
                 ),
                 textAlign: TextAlign.center,
               ),
+              const SizedBox(height: 20),
             ],
           ),
         ),
