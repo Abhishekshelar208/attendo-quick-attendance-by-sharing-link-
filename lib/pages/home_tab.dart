@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:attendo/pages/CreateAttendanceScreen.dart';
 import 'package:attendo/pages/CreateEventScreen.dart';
 import 'package:attendo/pages/CreateQuizScreen.dart';
+import 'package:attendo/pages/CreateFeedbackScreen.dart';
+import 'package:attendo/screens/instant_data_collection/create_instant_data_collection_screen.dart';
 import 'package:attendo/utils/theme_helper.dart';
 import 'package:attendo/utils/animation_helper.dart';
 import 'package:attendo/widgets/common_widgets.dart';
@@ -279,14 +281,14 @@ class HomeTab extends StatelessWidget {
         'label': 'Q&A /\nFeedback',
         'subtitle': 'Collect student responses',
         'color': const Color(0xff059669),
-        'available': false,
+        'available': true,
       },
       {
         'icon': Icons.poll_rounded,
         'label': 'Instant Data\nCollection',
         'subtitle': 'Quick surveys & polls',
         'color': const Color(0xfff59e0b),
-        'available': false,
+        'available': true,
       },
     ];
 
@@ -391,6 +393,20 @@ class HomeTab extends StatelessWidget {
                   context,
                   SmoothPageRoute(
                     page: const CreateQuizScreen(),
+                  ),
+                );
+              } else if (label.contains('Q&A') || label.contains('Feedback')) {
+                Navigator.push(
+                  context,
+                  SmoothPageRoute(
+                    page: CreateFeedbackScreen(),
+                  ),
+                );
+              } else if (label.contains('Instant Data')) {
+                Navigator.push(
+                  context,
+                  SmoothPageRoute(
+                    page: const CreateInstantDataCollectionScreen(),
                   ),
                 );
               }

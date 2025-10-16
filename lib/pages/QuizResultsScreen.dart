@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:attendo/utils/theme_helper.dart';
 import 'package:attendo/models/quiz_models.dart';
+import 'package:attendo/pages/QuizReviewScreen.dart';
 
 class QuizResultsScreen extends StatefulWidget {
   final String quizId;
@@ -172,182 +173,259 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
               ),
               const SizedBox(height: 32),
 
-              // Leaderboard Title
-              Row(
-                children: [
-                  const Icon(Icons.leaderboard_rounded, color: Colors.purple),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Leaderboard',
-                    style: GoogleFonts.poppins(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: ThemeHelper.getTextPrimary(context),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Top 3 Winners (if available)
-              if (participants.length >= 3) ...[
+              // Leaderboard Section (conditional)
+              if (quizSession?.showLeaderboard ?? true) ...[
+                // Leaderboard Title
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    // 2nd Place
-                    _buildPodiumCard(participants[1], 2, const Color(0xffc0c0c0)),
-                    const SizedBox(width: 8),
-                    // 1st Place
-                    _buildPodiumCard(participants[0], 1, const Color(0xffffd700)),
-                    const SizedBox(width: 8),
-                    // 3rd Place
-                    if (participants.length >= 3)
-                      _buildPodiumCard(participants[2], 3, const Color(0xffcd7f32)),
+                    const Icon(Icons.leaderboard_rounded, color: Colors.purple),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Leaderboard',
+                      style: GoogleFonts.poppins(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: ThemeHelper.getTextPrimary(context),
+                      ),
+                    ),
                   ],
+                ),
+                const SizedBox(height: 16),
+
+                // Top 3 Winners (if available)
+                if (participants.length >= 3) ...[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      // 2nd Place
+                      _buildPodiumCard(participants[1], 2, const Color(0xffc0c0c0)),
+                      const SizedBox(width: 8),
+                      // 1st Place
+                      _buildPodiumCard(participants[0], 1, const Color(0xffffd700)),
+                      const SizedBox(width: 8),
+                      // 3rd Place
+                      if (participants.length >= 3)
+                        _buildPodiumCard(participants[2], 3, const Color(0xffcd7f32)),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                ],
+
+                // All Participants List
+                Container(
+                  decoration: BoxDecoration(
+                    color: ThemeHelper.getCardColor(context),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: ThemeHelper.getBorderColor(context)),
+                  ),
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: participants.length,
+                    separatorBuilder: (context, index) => Divider(
+                      height: 1,
+                      color: ThemeHelper.getBorderColor(context),
+                    ),
+                    itemBuilder: (context, index) {
+                      final participant = participants[index];
+                      final isCurrentUser = participant['id'] == widget.participantId;
+                      final rank = participant['rank'];
+                      final customValues = Map<String, dynamic>.from(
+                        participant['custom_field_values'] ?? {}
+                      );
+                      final name = customValues['Name'] ?? 'Student';
+                      final score = participant['score'] ?? 0;
+
+                      return Container(
+                        color: isCurrentUser
+                            ? Colors.purple.withValues(alpha: 0.1)
+                            : Colors.transparent,
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            // Rank
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: _getRankColor(rank).withValues(alpha: 0.2),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  _getRankDisplay(rank),
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: _getRankColor(rank),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            
+                            // Name and ID
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Text(
+                                        name,
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                          color: ThemeHelper.getTextPrimary(context),
+                                        ),
+                                      ),
+                                      if (isCurrentUser) ...[
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: Colors.purple,
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          child: Text(
+                                            'You',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                  if (customValues['Student ID'] != null)
+                                    Text(
+                                      'ID: ${customValues['Student ID']}',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 12,
+                                        color: ThemeHelper.getTextSecondary(context),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            
+                            // Score
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  '$score',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.purple,
+                                  ),
+                                ),
+                                Text(
+                                  '/${quizSession?.questions.length ?? 0}',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 12,
+                                    color: ThemeHelper.getTextSecondary(context),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ] else ...[
+                // Privacy message when leaderboard is hidden
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: ThemeHelper.getCardColor(context),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: ThemeHelper.getBorderColor(context)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.lock_rounded,
+                        color: ThemeHelper.getTextSecondary(context),
+                        size: 40,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Private Results',
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: ThemeHelper.getTextPrimary(context),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'The teacher has kept the leaderboard private. Only you can see your score.',
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                color: ThemeHelper.getTextSecondary(context),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 24),
               ],
 
-              // All Participants List
-              Container(
-                decoration: BoxDecoration(
-                  color: ThemeHelper.getCardColor(context),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: ThemeHelper.getBorderColor(context)),
-                ),
-                child: ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: participants.length,
-                  separatorBuilder: (context, index) => Divider(
-                    height: 1,
-                    color: ThemeHelper.getBorderColor(context),
-                  ),
-                  itemBuilder: (context, index) {
-                    final participant = participants[index];
-                    final isCurrentUser = participant['id'] == widget.participantId;
-                    final rank = participant['rank'];
-                    final customValues = Map<String, dynamic>.from(
-                      participant['custom_field_values'] ?? {}
-                    );
-                    final name = customValues['Name'] ?? 'Student';
-                    final score = participant['score'] ?? 0;
-
-                    return Container(
-                      color: isCurrentUser
-                          ? Colors.purple.withValues(alpha: 0.1)
-                          : Colors.transparent,
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          // Rank
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: _getRankColor(rank).withValues(alpha: 0.2),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Center(
-                              child: Text(
-                                _getRankDisplay(rank),
-                                style: GoogleFonts.poppins(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: _getRankColor(rank),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          
-                          // Name and ID
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Text(
-                                      name,
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                        color: ThemeHelper.getTextPrimary(context),
-                                      ),
-                                    ),
-                                    if (isCurrentUser) ...[
-                                      const SizedBox(width: 8),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: Colors.purple,
-                                          borderRadius: BorderRadius.circular(4),
-                                        ),
-                                        child: Text(
-                                          'You',
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                                if (customValues['Student ID'] != null)
-                                  Text(
-                                    'ID: ${customValues['Student ID']}',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 12,
-                                      color: ThemeHelper.getTextSecondary(context),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                          
-                          // Score
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                '$score',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.purple,
-                                ),
-                              ),
-                              Text(
-                                '/${quizSession?.questions.length ?? 0}',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 12,
-                                  color: ThemeHelper.getTextSecondary(context),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+              // Check Answers Button
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => QuizReviewScreen(
+                          quizId: widget.quizId,
+                          participantId: widget.participantId,
+                        ),
                       ),
                     );
                   },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.purple,
+                    foregroundColor: Colors.white,
+                  ),
+                  icon: const Icon(Icons.visibility_rounded),
+                  label: Text(
+                    'Check Answers',
+                    style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 12),
 
               // Exit Button
               SizedBox(
                 width: double.infinity,
                 height: 56,
-                child: ElevatedButton(
+                child: OutlinedButton(
                   onPressed: () {
                     Navigator.of(context).popUntil((route) => route.isFirst);
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: ThemeHelper.getPrimaryColor(context),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: ThemeHelper.getPrimaryColor(context), width: 2),
+                    foregroundColor: ThemeHelper.getPrimaryColor(context),
                   ),
                   child: Text(
                     'Back to Home',

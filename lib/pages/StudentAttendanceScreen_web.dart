@@ -9,6 +9,7 @@ import 'package:attendo/services/tab_monitor_service.dart';
 import 'package:attendo/services/bluetooth_proximity_service.dart';
 import 'dart:async';
 import 'StudentViewAttendanceScreen.dart';
+import 'package:lottie/lottie.dart';
 
 class StudentAttendanceScreen extends StatefulWidget {
   final String sessionId;
@@ -29,12 +30,15 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
   String? inputType;
   String? year;
   String? branch;
+  String? date;
+  String? time;
   String? serverOtp;
   bool isEnded = false;
   bool otpActive = false;
   bool bluetoothEnabled = true; // NEW: Whether Bluetooth is required for this session
   String? expectedDeviceName; // NEW: Dynamic device name from Firebase
   int otpDuration = 20; // Will be fetched from Firebase
+  List<String> markedStudents = []; // List of students who marked attendance
   
   // Screen states
   // UPDATED FLOW: 1: Roll entry, 2: OTP waiting, 3: OTP entry, 4: Bluetooth check (if enabled)
@@ -66,6 +70,8 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
     super.dispose();
   }
 
+  bool _isInitialLoading = true; // Track initial load
+
   void _fetchSessionDetails() async {
     DatabaseReference sessionRef = FirebaseDatabase.instance
         .ref()
@@ -79,11 +85,32 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
           inputType = data['type'];
           year = data['year'];
           branch = data['branch'];
+          date = data['date'];
+          time = data['time'];
           serverOtp = data['otp'];
           isEnded = data['is_ended'] ?? false;
           bluetoothEnabled = data['bluetooth_enabled'] ?? true; // NEW: Get Bluetooth setting
           expectedDeviceName = data['bluetooth_device_name']; // NEW: Get dynamic device name
           otpDuration = data['otp_duration'] ?? 20; // Get custom duration
+          _isInitialLoading = false; // Mark loading as complete
+          
+          // If session ended, fetch the attendance list
+          if (isEnded && data['students'] != null) {
+            Map<dynamic, dynamic> studentsMap = data['students'] as Map<dynamic, dynamic>;
+            List<String> students = studentsMap.values.map((e) => e['entry'].toString()).toList();
+            
+            // Sort in ascending order
+            students.sort((a, b) {
+              final aNum = int.tryParse(a);
+              final bNum = int.tryParse(b);
+              if (aNum != null && bNum != null) {
+                return aNum.compareTo(bNum);
+              }
+              return a.compareTo(b);
+            });
+            
+            markedStudents = students;
+          }
         });
       }
     });
@@ -256,6 +283,21 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Show loading animation during initial load
+    if (_isInitialLoading) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: Lottie.asset(
+            'lib/assets/animations/runningcuteanimation.json',
+            width: 300,
+            height: 300,
+            fit: BoxFit.contain,
+          ),
+        ),
+      );
+    }
+
     return WillPopScope(
       onWillPop: () async {
         SystemNavigator.pop();
@@ -1376,44 +1418,239 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
   }
 
   Widget _buildSessionEndedView() {
-    return Center(
+    return SingleChildScrollView(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(20.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            const SizedBox(height: 20),
+            
+            // Session Ended Icon
+            Center(
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      ThemeHelper.getWarningColor(context),
+                      ThemeHelper.getWarningColor(context).withValues(alpha: 0.8),
+                    ],
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: ThemeHelper.getWarningColor(context).withValues(alpha: 0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.lock_clock_rounded,
+                  size: 56,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            const SizedBox(height: 30),
+            
+            // Session Ended Card
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.orange, Colors.orange.shade700],
+                color: ThemeHelper.getWarningColor(context).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: ThemeHelper.getWarningColor(context).withValues(alpha: 0.3),
+                  width: 2,
                 ),
-                shape: BoxShape.circle,
               ),
-              child: Icon(
-                Icons.lock_clock_rounded,
-                size: 64,
-                color: Colors.white,
+              child: Column(
+                children: [
+                  Text(
+                    'Session Ended',
+                    style: GoogleFonts.poppins(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: ThemeHelper.getTextPrimary(context),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'This attendance session has been closed by the teacher',
+                    style: GoogleFonts.poppins(
+                      fontSize: 15,
+                      color: ThemeHelper.getTextSecondary(context),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
+            
+            // Session Details Card
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: ThemeHelper.getCardColor(context),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: ThemeHelper.getShadowColor(context),
+                    blurRadius: 15,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Session Details',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: ThemeHelper.getTextPrimary(context),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  if (lectureName != null) ...[
+                    _buildDetailRow(Icons.book_rounded, 'Lecture', lectureName!),
+                    const SizedBox(height: 16),
+                  ],
+                  if (year != null && branch != null) ...[
+                    _buildDetailRow(Icons.school_rounded, 'Class', '$year - $branch'),
+                    const SizedBox(height: 16),
+                  ],
+                  if (date != null) ...[
+                    _buildDetailRow(Icons.calendar_today_rounded, 'Date', date!),
+                    const SizedBox(height: 16),
+                  ],
+                  if (time != null) ...[
+                    _buildDetailRow(Icons.access_time_rounded, 'Time', time!),
+                    const SizedBox(height: 16),
+                  ],
+                  _buildDetailRow(
+                    Icons.people_rounded,
+                    'Total Present',
+                    '${markedStudents.length}',
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            
+            // Present Students Section
             Text(
-              'Session Ended',
+              'Present Students',
               style: GoogleFonts.poppins(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
                 color: ThemeHelper.getTextPrimary(context),
               ),
             ),
-            const SizedBox(height: 16),
-            Text(
-              'This attendance session has been closed by the teacher',
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                color: ThemeHelper.getTextSecondary(context),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: ThemeHelper.getCardColor(context),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: ThemeHelper.getShadowColor(context),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-              textAlign: TextAlign.center,
+              child: markedStudents.isEmpty
+                  ? Column(
+                      children: [
+                        Icon(
+                          Icons.people_outline_rounded,
+                          size: 64,
+                          color: ThemeHelper.getTextTertiary(context),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No students marked attendance',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: ThemeHelper.getTextPrimary(context),
+                          ),
+                        ),
+                      ],
+                    )
+                  : Column(
+                      children: [
+                        // Count Badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: ThemeHelper.getSuccessColor(context).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            'Total: ${markedStudents.length}',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: ThemeHelper.getSuccessColor(context),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        // Students List
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
+                          children: markedStudents.map((rollNo) {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 10,
+                              ),
+                              decoration: BoxDecoration(
+                                color: ThemeHelper.getSuccessColor(context).withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: ThemeHelper.getSuccessColor(context).withValues(alpha: 0.3),
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.check_circle_rounded,
+                                    size: 18,
+                                    color: ThemeHelper.getSuccessColor(context),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    rollNo,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: ThemeHelper.getTextPrimary(context),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ),
             ),
+            const SizedBox(height: 40),
           ],
         ),
       ),
@@ -1950,6 +2187,44 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildDetailRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: ThemeHelper.getPrimaryColor(context).withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(
+            icon,
+            color: ThemeHelper.getPrimaryColor(context),
+            size: 20,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          '$label: ',
+          style: GoogleFonts.poppins(
+            fontSize: 15,
+            color: ThemeHelper.getTextSecondary(context),
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: GoogleFonts.poppins(
+              fontSize: 15,
+              color: ThemeHelper.getTextPrimary(context),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

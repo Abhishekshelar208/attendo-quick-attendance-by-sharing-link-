@@ -1,8 +1,11 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:html' as html show Blob, AnchorElement, Url;
 
 class QuizPdfGenerator {
   static Future<File> generateQuizReport({
@@ -65,13 +68,28 @@ class QuizPdfGenerator {
     );
 
     // Save PDF
-    final directory = await getApplicationDocumentsDirectory();
     final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
     final fileName = 'quiz_report_${quizData['quiz_name']}_$timestamp.pdf';
-    final file = File('${directory.path}/$fileName');
-    await file.writeAsBytes(await pdf.save());
+    final pdfBytes = await pdf.save();
 
-    return file;
+    if (kIsWeb) {
+      // Web: Download PDF directly
+      final blob = html.Blob([pdfBytes], 'application/pdf');
+      final url = html.Url.createObjectUrlFromBlob(blob);
+      final anchor = html.AnchorElement(href: url)
+        ..setAttribute('download', fileName)
+        ..click();
+      html.Url.revokeObjectUrl(url);
+      
+      // Return a dummy file for web (not actually used)
+      return File(fileName);
+    } else {
+      // Mobile/Desktop: Save to file system
+      final directory = await getApplicationDocumentsDirectory();
+      final file = File('${directory.path}/$fileName');
+      await file.writeAsBytes(pdfBytes);
+      return file;
+    }
   }
 
   static pw.Widget _buildHeader(Map<String, dynamic> quizData) {

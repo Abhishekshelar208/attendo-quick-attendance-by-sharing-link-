@@ -138,6 +138,7 @@ class _QuizQuestionsScreenState extends State<QuizQuestionsScreen> {
         creatorName: currentUser?.displayName ?? 'Unknown',
         creatorEmail: currentUser?.email ?? '',
         generationMethod: 'manual',
+        showLeaderboard: widget.quizData['show_leaderboard'] ?? true,
         customFields: List<CustomField>.from(widget.quizData['custom_fields']),
         questions: questions,
         participants: {},

@@ -8,6 +8,7 @@ import 'package:attendo/widgets/custom_field_widgets.dart';
 import 'package:attendo/services/device_fingerprint_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'EventViewParticipantsScreen.dart';
+import 'package:lottie/lottie.dart';
 
 class StudentEventCheckInScreen extends StatefulWidget {
   final String sessionId;
@@ -352,7 +353,7 @@ class _StudentEventCheckInScreenState extends State<StudentEventCheckInScreen> {
   Widget build(BuildContext context) {
     if (isLoading) {
       return Scaffold(
-        backgroundColor: ThemeHelper.getBackgroundColor(context),
+        backgroundColor: alreadyMarkedEntry != null ? ThemeHelper.getBackgroundColor(context) : Colors.white,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -398,26 +399,11 @@ class _StudentEventCheckInScreenState extends State<StudentEventCheckInScreen> {
                   ),
                 ),
               ] else ...[
-                CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(ThemeHelper.getPrimaryColor(context)),
-                  strokeWidth: 3,
-                ),
-                SizedBox(height: 24),
-                Text(
-                  'Loading event details...',
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: ThemeHelper.getTextPrimary(context),
-                  ),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'Please wait',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    color: ThemeHelper.getTextSecondary(context),
-                  ),
+                Lottie.asset(
+                  'lib/assets/animations/runningcuteanimation.json',
+                  width: 300,
+                  height: 300,
+                  fit: BoxFit.contain,
                 ),
               ],
             ],

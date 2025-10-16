@@ -4,10 +4,14 @@
 import 'package:attendo/pages/StudentAttendanceScreen.dart';
 import 'package:attendo/pages/StudentEventCheckInScreen.dart';
 import 'package:attendo/pages/StudentQuizEntryScreen.dart';
+import 'package:attendo/pages/StudentFeedbackScreen.dart';
 import 'package:attendo/pages/home_screen_with_nav.dart';
 import 'package:attendo/pages/intro_screen.dart';
 import 'package:attendo/pages/LoginScreen.dart';
 import 'package:attendo/services/auth_service.dart';
+import 'package:attendo/screens/instant_data_collection/create_instant_data_collection_screen.dart';
+import 'package:attendo/screens/instant_data_collection/share_instant_data_collection_screen.dart';
+import 'package:attendo/screens/instant_data_collection/student_instant_data_collection_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -204,6 +208,35 @@ class MyApp extends StatelessWidget {
           );
         }
         
+        // Check for feedback route
+        if (uri.pathSegments.length >= 2 && uri.pathSegments[0] == 'feedback') {
+          String sessionId = uri.pathSegments[1];
+          print('📝 Opening feedback session: $sessionId');
+          return MaterialPageRoute(
+            builder: (context) => StudentFeedbackScreen(sessionId: sessionId),
+          );
+        }
+        
+        // Check for instant data collection route
+        if (uri.pathSegments.length >= 2 && uri.pathSegments[0] == 'instant-data') {
+          String sessionId = uri.pathSegments[1];
+          print('📊 Opening instant data collection: $sessionId');
+          return MaterialPageRoute(
+            builder: (context) => StudentInstantDataCollectionScreen(sessionId: sessionId),
+          );
+        }
+        
+        // Check for instant data collection share route (for teachers)
+        if (uri.pathSegments.length >= 2 && uri.pathSegments[0] == 'instant-data-collection' && uri.pathSegments[1] == 'share') {
+          if (settings.arguments != null && settings.arguments is String) {
+            String sessionId = settings.arguments as String;
+            print('📤 Opening instant data collection share: $sessionId');
+            return MaterialPageRoute(
+              builder: (context) => ShareInstantDataCollectionScreen(sessionId: sessionId),
+            );
+          }
+        }
+        
         return null;
       },
     );
@@ -321,6 +354,29 @@ class _SplashCheckerState extends State<SplashChecker> {
               context,
               MaterialPageRoute(
                 builder: (context) => StudentQuizEntryScreen(quizId: quizId!),
+              ),
+            );
+            return;
+          }
+        }
+      }
+      
+      // Check for feedback in hash fragment
+      if (currentUrl.contains('#/feedback/')) {
+        final hashPart = Uri.base.fragment;
+        print('🔗 Hash fragment: $hashPart');
+        
+        // Extract feedback session ID from #/feedback/XXXXX
+        final match = RegExp(r'#/feedback/([^/]+)').firstMatch(currentUrl);
+        if (match != null) {
+          final sessionId = match.group(1);
+          print('✅ Found feedback session ID: $sessionId');
+          
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => StudentFeedbackScreen(sessionId: sessionId!),
               ),
             );
             return;

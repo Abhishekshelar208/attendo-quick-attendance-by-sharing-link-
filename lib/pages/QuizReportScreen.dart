@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:intl/intl.dart';
 import 'package:csv/csv.dart';
+import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:attendo/services/quiz_pdf_generator.dart';
+import 'dart:html' as html show Blob, AnchorElement, Url;
 
 class QuizReportScreen extends StatefulWidget {
   final String quizId;
@@ -58,12 +61,17 @@ class _QuizReportScreenState extends State<QuizReportScreen> {
         participants: participants,
       );
 
-      await Share.shareXFiles(
-        [XFile(file.path)],
-        subject: 'Quiz Report - ${quizData?['quiz_name']}',
-      );
-
-      _showSuccess('PDF Report generated successfully!');
+      if (kIsWeb) {
+        // Web: File is already downloaded via browser
+        _showSuccess('PDF downloaded successfully!');
+      } else {
+        // Mobile/Desktop: Share the file
+        await Share.shareXFiles(
+          [XFile(file.path)],
+          subject: 'Quiz Report - ${quizData?['quiz_name']}',
+        );
+        _showSuccess('PDF Report generated successfully!');
+      }
     } catch (e) {
       _showError('Error generating PDF: $e');
     } finally {
@@ -131,21 +139,32 @@ class _QuizReportScreenState extends State<QuizReportScreen> {
       }
 
       String csv = const ListToCsvConverter().convert(rows);
-
-      // Save and share
-      final directory = await getApplicationDocumentsDirectory();
       final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
       final fileName = 'quiz_report_${widget.quizId}_$timestamp.csv';
-      final path = '${directory.path}/$fileName';
-      final file = File(path);
-      await file.writeAsString(csv);
 
-      await Share.shareXFiles(
-        [XFile(path)],
-        subject: 'Quiz Report - ${quizData?['quiz_name']}',
-      );
+      if (kIsWeb) {
+        // Web: Download CSV directly
+        final bytes = utf8.encode(csv);
+        final blob = html.Blob([bytes]);
+        final url = html.Url.createObjectUrlFromBlob(blob);
+        final anchor = html.AnchorElement(href: url)
+          ..setAttribute('download', fileName)
+          ..click();
+        html.Url.revokeObjectUrl(url);
+        _showSuccess('CSV downloaded successfully!');
+      } else {
+        // Mobile/Desktop: Save and share
+        final directory = await getApplicationDocumentsDirectory();
+        final path = '${directory.path}/$fileName';
+        final file = File(path);
+        await file.writeAsString(csv);
 
-      _showSuccess('Report exported successfully!');
+        await Share.shareXFiles(
+          [XFile(path)],
+          subject: 'Quiz Report - ${quizData?['quiz_name']}',
+        );
+        _showSuccess('Report exported successfully!');
+      }
     } catch (e) {
       _showError('Error exporting CSV: $e');
     } finally {

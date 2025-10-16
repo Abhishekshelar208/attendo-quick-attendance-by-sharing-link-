@@ -106,6 +106,7 @@ class QuizSession {
   String creatorName;
   String creatorEmail;
   String generationMethod; // 'manual' or 'ai'
+  bool showLeaderboard; // Whether students can see full leaderboard
   List<CustomField> customFields;
   List<QuizQuestion> questions;
   Map<String, QuizParticipant> participants;
@@ -126,6 +127,7 @@ class QuizSession {
     required this.creatorName,
     required this.creatorEmail,
     this.generationMethod = 'manual',
+    this.showLeaderboard = true,
     this.customFields = const [],
     this.questions = const [],
     this.participants = const {},
@@ -147,6 +149,7 @@ class QuizSession {
       'creator_name': creatorName,
       'creator_email': creatorEmail,
       'generation_method': generationMethod,
+      'show_leaderboard': showLeaderboard,
       'custom_fields': customFields.map((f) => f.toJson()).toList(),
       'questions': questions.map((q) => q.toJson()).toList(),
       'participants': participants.map((key, value) => MapEntry(key, value.toJson())),
@@ -180,6 +183,7 @@ class QuizSession {
       creatorName: json['creator_name'] ?? '',
       creatorEmail: json['creator_email'] ?? '',
       generationMethod: json['generation_method'] ?? 'manual',
+      showLeaderboard: json['show_leaderboard'] ?? true,
       customFields: (json['custom_fields'] as List<dynamic>?)
               ?.map((f) => CustomField.fromJson(Map<String, dynamic>.from(f)))
               .toList() ??

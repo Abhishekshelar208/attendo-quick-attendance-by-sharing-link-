@@ -25,6 +25,7 @@ class _CreateQuizScreenState extends State<CreateQuizScreen> {
   DateTime? selectedDate;
   TimeOfDay? selectedTime;
   String selectedQuizType = 'MCQ';
+  bool showLeaderboard = true; // Default: show leaderboard to all students
 
   // Only Name field is required for quiz participants
   List<CustomField> customFields = [
@@ -161,6 +162,7 @@ class _CreateQuizScreenState extends State<CreateQuizScreen> {
       'time': selectedTime!.format(context),
       'quiz_type': selectedQuizType,
       'custom_fields': customFields,
+      'show_leaderboard': showLeaderboard,
     };
 
     if (method == 'manual') {
@@ -493,6 +495,68 @@ class _CreateQuizScreenState extends State<CreateQuizScreen> {
                     ),
                   );
                 }).toList(),
+                const SizedBox(height: 32),
+
+                // Result Visibility Settings
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: ThemeHelper.getCardColor(context),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: ThemeHelper.getBorderColor(context)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.visibility_rounded,
+                            color: ThemeHelper.getPrimaryColor(context),
+                            size: 24,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Result Visibility',
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: ThemeHelper.getTextPrimary(context),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      SwitchListTile(
+                        value: showLeaderboard,
+                        onChanged: (value) {
+                          setState(() {
+                            showLeaderboard = value;
+                          });
+                        },
+                        title: Text(
+                          'Show Leaderboard',
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: ThemeHelper.getTextPrimary(context),
+                          ),
+                        ),
+                        subtitle: Text(
+                          showLeaderboard
+                              ? 'Students can see all participants\' scores and rankings'
+                              : 'Students can only see their own score and rank',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: ThemeHelper.getTextSecondary(context),
+                          ),
+                        ),
+                        activeColor: ThemeHelper.getPrimaryColor(context),
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 32),
 
                 // Proceed Buttons

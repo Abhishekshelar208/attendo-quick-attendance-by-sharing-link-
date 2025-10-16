@@ -12,6 +12,8 @@ import 'package:attendo/services/bluetooth_name_service.dart';
 import 'package:printing/printing.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 
 class ShareAttendanceScreen extends StatefulWidget {
   final String sessionId;
@@ -277,7 +279,7 @@ class _ShareAttendanceScreenState extends State<ShareAttendanceScreen> {
     }
 
     // End the session automatically when timer expires
-    await endAttendance();
+    endAttendance(); // Remove await since it's a void function
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -359,7 +361,8 @@ class _ShareAttendanceScreenState extends State<ShareAttendanceScreen> {
                 child: TextField(
                   decoration: InputDecoration(
                     labelText: 'Custom (seconds)',
-                    hintText: 'Enter 5-60',
+                    hintText: 'Enter minimum 5 seconds',
+                    helperText: 'No maximum limit',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -367,12 +370,12 @@ class _ShareAttendanceScreenState extends State<ShareAttendanceScreen> {
                   keyboardType: TextInputType.number,
                   onSubmitted: (value) {
                     int? customValue = int.tryParse(value);
-                    if (customValue != null && customValue >= 5 && customValue <= 60) {
+                    if (customValue != null && customValue >= 5) {
                       Navigator.pop(context, customValue);
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Please enter a value between 5 and 60 seconds'),
+                          content: Text('Please enter a value of at least 5 seconds'),
                           backgroundColor: Colors.red,
                         ),
                       );
@@ -729,75 +732,170 @@ class _ShareAttendanceScreenState extends State<ShareAttendanceScreen> {
   void _exportAsPDF() async {
     if (lectureName == null) return;
 
-    final pdf = pw.Document();
+    try {
+      final pdf = pw.Document();
 
-    pdf.addPage(
-      pw.Page(
-        pageFormat: PdfPageFormat.a4,
-        build: (pw.Context context) {
-          return pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Text(
-                'Classroom Attendance Report',
-                style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
+      pdf.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat.a4,
+          build: (pw.Context context) {
+            return pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(
+                  'Classroom Attendance Report',
+                  style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
+                ),
+                pw.SizedBox(height: 20),
+                pw.Text('Subject: $lectureName', style: pw.TextStyle(fontSize: 16)),
+                pw.Text('Year: $year | Branch: $branch', style: pw.TextStyle(fontSize: 14)),
+                pw.Text('Session ID: ${widget.sessionId}', style: pw.TextStyle(fontSize: 12)),
+                pw.SizedBox(height: 20),
+                pw.Divider(),
+                pw.SizedBox(height: 10),
+                pw.Text(
+                  'Total Students Present: ${markedStudents.length}',
+                  style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
+                ),
+                pw.SizedBox(height: 10),
+                pw.Divider(),
+                pw.SizedBox(height: 10),
+                pw.Text(
+                  'Attendance List:',
+                  style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
+                ),
+                pw.SizedBox(height: 10),
+                // Student list
+                ...markedStudents.asMap().entries.map((entry) {
+                  int index = entry.key + 1;
+                  String student = entry.value;
+                  return pw.Padding(
+                    padding: pw.EdgeInsets.only(bottom: 5),
+                    child: pw.Text(
+                      '$index. $student',
+                      style: pw.TextStyle(fontSize: 14),
+                    ),
+                  );
+                }).toList(),
+                pw.SizedBox(height: 30),
+                pw.Divider(),
+                pw.SizedBox(height: 10),
+                pw.Text(
+                  'Generated: ${DateTime.now().toString().substring(0, 19)}',
+                  style: pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+                ),
+                pw.Text(
+                  'Session Link: https://attendo-312ea.web.app/#/session/${widget.sessionId}',
+                  style: pw.TextStyle(fontSize: 10, color: PdfColors.blue),
+                ),
+              ],
+            );
+          },
+        ),
+      );
+
+      // Show dialog with options
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Row(
+              children: [
+                Icon(Icons.picture_as_pdf_rounded, color: Colors.red, size: 28),
+                SizedBox(width: 12),
+                Text(
+                  'Export PDF',
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            content: Text(
+              'Choose how you want to export the attendance report',
+              style: GoogleFonts.poppins(fontSize: 14),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Cancel'),
               ),
-              pw.SizedBox(height: 20),
-              pw.Text('Subject: $lectureName', style: pw.TextStyle(fontSize: 16)),
-              pw.Text('Year: $year | Branch: $branch', style: pw.TextStyle(fontSize: 14)),
-              pw.Text('Session ID: ${widget.sessionId}', style: pw.TextStyle(fontSize: 12)),
-              pw.SizedBox(height: 20),
-              pw.Divider(),
-              pw.SizedBox(height: 10),
-              pw.Text(
-                'Total Students Present: ${markedStudents.length}',
-                style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  // Preview PDF
+                  await Printing.layoutPdf(
+                    onLayout: (PdfPageFormat format) async => pdf.save(),
+                  );
+                },
+                icon: Icon(Icons.visibility_rounded, size: 18),
+                label: Text('Preview'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                ),
               ),
-              pw.SizedBox(height: 10),
-              pw.Divider(),
-              pw.SizedBox(height: 10),
-              pw.Text(
-                'Attendance List:',
-                style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
-              ),
-              pw.SizedBox(height: 10),
-              // Student list
-              ...markedStudents.asMap().entries.map((entry) {
-                int index = entry.key + 1;
-                String student = entry.value;
-                return pw.Padding(
-                  padding: pw.EdgeInsets.only(bottom: 5),
-                  child: pw.Text(
-                    '$index. $student',
-                    style: pw.TextStyle(fontSize: 14),
-                  ),
-                );
-              }).toList(),
-              pw.SizedBox(height: 30),
-              pw.Divider(),
-              pw.SizedBox(height: 10),
-              pw.Text(
-                'Generated: ${DateTime.now().toString().substring(0, 19)}',
-                style: pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
-              ),
-              pw.Text(
-                'Session Link: https://attendo-312ea.web.app/#/session/${widget.sessionId}',
-                style: pw.TextStyle(fontSize: 10, color: PdfColors.blue),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  // Save and share PDF
+                  await _saveAndSharePDF(pdf);
+                },
+                icon: Icon(Icons.share_rounded, size: 18),
+                label: Text('Share'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                ),
               ),
             ],
           );
         },
-      ),
-    );
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Error creating PDF: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
-    await Printing.layoutPdf(onLayout: (PdfPageFormat format) async => pdf.save());
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('📝 PDF exported successfully!'),
-        backgroundColor: Colors.green,
-      ),
-    );
+  // Save PDF and share it
+  Future<void> _saveAndSharePDF(pw.Document pdf) async {
+    try {
+      // Get temporary directory
+      final Directory tempDir = await getTemporaryDirectory();
+      final String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+      final String fileName = 'Attendance_${lectureName}_$timestamp.pdf';
+      final String filePath = '${tempDir.path}/$fileName';
+
+      // Save PDF to file
+      final File file = File(filePath);
+      await file.writeAsBytes(await pdf.save());
+
+      // Share the file
+      await Share.shareXFiles(
+        [XFile(filePath)],
+        text: 'Attendance Report for $lectureName\nTotal Students: ${markedStudents.length}',
+        subject: 'Attendance Report - $lectureName',
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('📤 PDF ready to share!'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Error sharing PDF: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -819,13 +917,6 @@ class _ShareAttendanceScreenState extends State<ShareAttendanceScreen> {
             onPressed: _exportAsPDF,
             tooltip: 'Export PDF',
           ),
-          // Add attendance button (only when session ended)
-          if (isEnded)
-            IconButton(
-              icon: Icon(Icons.add_circle_outline),
-              onPressed: _showAddAttendanceDialog,
-              tooltip: 'Add Attendance',
-            ),
         ],
       ),
       body: SafeArea(
@@ -944,24 +1035,30 @@ class _ShareAttendanceScreenState extends State<ShareAttendanceScreen> {
                     ],
                   ),
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
               ],
 
-              // Session Info Card
+              //               // Session Info Card
               _buildSessionInfoCard(context),
               const SizedBox(height: 20),
 
               // Attendance Mode Card
-              if (!isEnded) _buildAttendanceModeCard(context),
-              const SizedBox(height: 20),
+              if (!isEnded) ...[
+                _buildAttendanceModeCard(context),
+                const SizedBox(height: 20),
+              ],
 
               // Bluetooth Activation Card (only if enabled)
-              if (!isEnded && bluetoothEnabled) _buildBluetoothCard(context),
-              if (!isEnded && bluetoothEnabled) const SizedBox(height: 20),
+              if (!isEnded && bluetoothEnabled) ...[
+                _buildBluetoothCard(context),
+                const SizedBox(height: 20),
+              ],
 
               // OTP Card
-              if (!isEnded) _buildOTPCard(context),
-              const SizedBox(height: 20),
+              if (!isEnded) ...[
+                _buildOTPCard(context),
+                const SizedBox(height: 20),
+              ],
 
               // Live Count Card
               _buildLiveCountCard(context),
@@ -1004,6 +1101,76 @@ class _ShareAttendanceScreenState extends State<ShareAttendanceScreen> {
                 ),
               ],
               const SizedBox(height: 24),
+
+              // Add Student by Roll No button (only when session ended)
+              if (isEnded) ...[
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.green.shade600, Colors.green.shade400],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.green.withValues(alpha: 0.3),
+                        blurRadius: 10,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: _showAddAttendanceDialog,
+                      borderRadius: BorderRadius.circular(16),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.person_add_rounded,
+                              color: Colors.white,
+                              size: 28,
+                            ),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Add Student by Roll No',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  Text(
+                                    'Manually add students who couldn\'t mark attendance',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 11,
+                                      color: Colors.white.withValues(alpha: 0.9),
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
 
               // Live Attendance Section
               _buildLiveAttendanceSection(context),
@@ -1908,7 +2075,7 @@ class _ShareAttendanceScreenState extends State<ShareAttendanceScreen> {
                             ),
                           ),
                           // Delete button (only when session ended)
-                          if (isEnded) ..[
+                          if (isEnded) ...[
                             const SizedBox(width: 8),
                             GestureDetector(
                               onTap: () => _showRemoveAttendanceDialog(rollNo),

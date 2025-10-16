@@ -37,6 +37,9 @@
   <title>QuickPro</title>
   <link rel="manifest" href="manifest.json">
   
+  <!-- Lottie Web Player -->
+  <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+  
   <style>
     /* Loading screen styles */
     .loading-container {
@@ -45,7 +48,7 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: #2563eb;
+      background: #ffffff;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -57,38 +60,33 @@
       opacity: 0;
       pointer-events: none;
     }
-    .loading-spinner {
-      width: 50px;
-      height: 50px;
-      border: 4px solid rgba(255, 255, 255, 0.3);
-      border-top-color: white;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
+    .loading-animation {
+      width: 90vw;
+      height: 90vh;
+      max-width: 500px;
+      max-height: 500px;
     }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    .loading-text {
-      margin-top: 20px;
-      color: white;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      font-size: 16px;
-      font-weight: 500;
-    }
-    .loading-version {
-      margin-top: 10px;
-      color: rgba(255, 255, 255, 0.7);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      font-size: 12px;
+    @media (max-width: 768px) {
+      .loading-animation {
+        width: 80vw;
+        height: 80vh;
+        max-width: 350px;
+        max-height: 350px;
+      }
     }
   </style>
 </head>
 <body>
   <!-- Loading screen -->
   <div id="loading" class="loading-container">
-    <div class="loading-spinner"></div>
-    <div class="loading-text">Loading QuickPro...</div>
-    <div class="loading-version">Checking for updates</div>
+    <lottie-player
+      class="loading-animation"
+      src="runningcuteanimation.json"
+      background="transparent"
+      speed="1"
+      loop
+      autoplay>
+    </lottie-player>
   </div>
 
   <!-- Service Worker Registration & Version Check -->
@@ -99,7 +97,6 @@
       const APP_VERSION = '1.0.0'; // Update this when you deploy new version
       const AUTO_UPDATE_ENABLED = false; // Set to true only when deploying updates
       const loadingEl = document.getElementById('loading');
-      const versionEl = loadingEl.querySelector('.loading-version');
       
       console.log('🚀 QuickPro v' + APP_VERSION + ' - Initializing...');
       
@@ -139,7 +136,6 @@
         
         if (lastVersion && lastVersion !== currentVersion) {
           console.log('🔄 New version detected! Clearing caches...');
-          versionEl.textContent = 'New version found! Updating...';
           
           // Mark that we're updating to prevent loop
           localStorage.setItem('updating_to_version', currentVersion);
@@ -203,18 +199,32 @@
       }
       
       const needsUpdate = checkForUpdates();
-      if (!needsUpdate) {
-        versionEl.textContent = 'v' + APP_VERSION;
-      }
+      
+      // Detect if this is a student link (has hash route like #/quiz, #/session, #/event, #/feedback)
+      const isStudentLink = window.location.hash && 
+        (window.location.hash.includes('/quiz/') || 
+         window.location.hash.includes('/session/') || 
+         window.location.hash.includes('/event/') || 
+         window.location.hash.includes('/feedback/') ||
+         window.location.hash.includes('/instant-data/'));
+      
+      // For teacher dashboard, hide quickly. For student links, keep longer to prevent white screen
+      const loadingTimeout = isStudentLink ? 5000 : 2000;
+      
+      console.log(isStudentLink ? '👨‍🎓 Student link detected - extended loading' : '👨‍🏫 Teacher dashboard - quick loading');
       
       // Hide loading screen when Flutter is ready
-      window.addEventListener('flutter-first-frame', hideLoading);
+      window.addEventListener('flutter-first-frame', () => {
+        if (!isStudentLink) {
+          hideLoading(); // Teachers get immediate hide
+        }
+      });
       
-      // Critical: Always hide after 3 seconds as fallback
+      // Fallback timeout - critical for student links to prevent white screen
       setTimeout(() => {
-        console.log('⏰ Timeout: Force hiding loading screen');
+        console.log('⏰ Hiding loading screen after timeout');
         hideLoading();
-      }, 3000);
+      }, loadingTimeout);
       
     })();
   </script>

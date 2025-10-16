@@ -5,6 +5,7 @@ import 'package:attendo/utils/theme_helper.dart';
 import 'package:attendo/widgets/common_widgets.dart';
 import 'package:attendo/models/quiz_models.dart';
 import 'package:attendo/pages/StudentQuizScreen.dart';
+import 'package:lottie/lottie.dart';
 
 class StudentQuizEntryScreen extends StatefulWidget {
   final String quizId;
@@ -156,10 +157,13 @@ class _StudentQuizEntryScreenState extends State<StudentQuizEntryScreen> {
   Widget build(BuildContext context) {
     if (isLoading) {
       return Scaffold(
-        backgroundColor: ThemeHelper.getBackgroundColor(context),
+        backgroundColor: Colors.white,
         body: Center(
-          child: CircularProgressIndicator(
-            color: ThemeHelper.getPrimaryColor(context),
+          child: Lottie.asset(
+            'lib/assets/animations/runningcuteanimation.json',
+            width: 300,
+            height: 300,
+            fit: BoxFit.contain,
           ),
         ),
       );

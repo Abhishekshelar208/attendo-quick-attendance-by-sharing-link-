@@ -688,44 +688,69 @@ class _StudentAttendanceScreenState extends State<StudentAttendanceScreen> {
                         ),
                       ],
                     )
-                  : Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      children: markedStudents.map((rollNo) {
-                        return Container(
+                  : Column(
+                      children: [
+                        // Count Badge
+                        Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 16,
-                            vertical: 10,
+                            vertical: 8,
                           ),
                           decoration: BoxDecoration(
                             color: ThemeHelper.getSuccessColor(context).withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: ThemeHelper.getSuccessColor(context).withValues(alpha: 0.3),
-                              width: 1.5,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            'Total: ${markedStudents.length}',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: ThemeHelper.getSuccessColor(context),
                             ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.check_circle_rounded,
-                                size: 18,
-                                color: ThemeHelper.getSuccessColor(context),
+                        ),
+                        const SizedBox(height: 16),
+                        // Students List
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
+                          children: markedStudents.map((rollNo) {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 10,
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                rollNo,
-                                style: GoogleFonts.poppins(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: ThemeHelper.getTextPrimary(context),
+                              decoration: BoxDecoration(
+                                color: ThemeHelper.getSuccessColor(context).withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: ThemeHelper.getSuccessColor(context).withValues(alpha: 0.3),
+                                  width: 1.5,
                                 ),
                               ),
-                            ],
-                          ),
-                        );
-                      }).toList(),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.check_circle_rounded,
+                                    size: 18,
+                                    color: ThemeHelper.getSuccessColor(context),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    rollNo,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: ThemeHelper.getTextPrimary(context),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
                     ),
             ),
             const SizedBox(height: 40),
