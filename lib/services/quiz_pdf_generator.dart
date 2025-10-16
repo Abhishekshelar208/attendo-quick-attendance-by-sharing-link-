@@ -129,12 +129,12 @@ class QuizPdfGenerator {
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
                   pw.Text(
-                    '📅 ${quizData['date'] ?? ''}',
+                    'Date: ${quizData['date'] ?? ''}',
                     style: const pw.TextStyle(fontSize: 14, color: PdfColors.white),
                   ),
                   pw.SizedBox(height: 4),
                   pw.Text(
-                    '🕐 ${quizData['time'] ?? ''}',
+                    'Time: ${quizData['time'] ?? ''}',
                     style: const pw.TextStyle(fontSize: 14, color: PdfColors.white),
                   ),
                 ],
@@ -143,12 +143,12 @@ class QuizPdfGenerator {
                 crossAxisAlignment: pw.CrossAxisAlignment.end,
                 children: [
                   pw.Text(
-                    '🎓 ${quizData['year']} ${quizData['branch']}',
+                    'Class: ${quizData['year']} ${quizData['branch']}',
                     style: const pw.TextStyle(fontSize: 14, color: PdfColors.white),
                   ),
                   pw.SizedBox(height: 4),
                   pw.Text(
-                    '📚 Division ${quizData['division']}',
+                    'Division: ${quizData['division']}',
                     style: const pw.TextStyle(fontSize: 14, color: PdfColors.white),
                   ),
                 ],
@@ -279,7 +279,7 @@ class QuizPdfGenerator {
             mainAxisAlignment: pw.MainAxisAlignment.center,
             children: [
               pw.Text(
-                '🏆 TOP 3 WINNERS 🏆',
+                'TOP 3 WINNERS',
                 style: pw.TextStyle(
                   fontSize: 22,
                   fontWeight: pw.FontWeight.bold,
@@ -300,7 +300,7 @@ class QuizPdfGenerator {
                 2,
                 totalQuestions,
                 PdfColors.grey400,
-                '🥈',
+                '2nd',
               ),
             // 1st Place
             if (top3.isNotEmpty)
@@ -309,7 +309,7 @@ class QuizPdfGenerator {
                 1,
                 totalQuestions,
                 const PdfColor.fromInt(0xFFFFD700), // Gold
-                '🥇',
+                '1st',
               ),
             // 3rd Place
             if (top3.length > 2)
@@ -318,7 +318,7 @@ class QuizPdfGenerator {
                 3,
                 totalQuestions,
                 const PdfColor.fromInt(0xFFCD7F32), // Bronze
-                '🥉',
+                '3rd',
               ),
           ],
         ),
@@ -331,7 +331,7 @@ class QuizPdfGenerator {
     int rank,
     int totalQuestions,
     PdfColor color,
-    String medal,
+    String rankLabel,
   ) {
     final customFields = participant.value['custom_field_values'] as Map?;
     final name = customFields?['Name'] ?? 'Unknown';
@@ -352,15 +352,29 @@ class QuizPdfGenerator {
       child: pw.Column(
         mainAxisAlignment: pw.MainAxisAlignment.center,
         children: [
-          pw.Text(
-            medal,
-            style: const pw.TextStyle(fontSize: 40),
+          pw.Container(
+            width: 60,
+            height: 60,
+            decoration: pw.BoxDecoration(
+              shape: pw.BoxShape.circle,
+              color: color,
+            ),
+            child: pw.Center(
+              child: pw.Text(
+                rankLabel,
+                style: pw.TextStyle(
+                  fontSize: 24,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.white,
+                ),
+              ),
+            ),
           ),
           pw.SizedBox(height: 8),
           pw.Text(
-            '#$rank',
+            'PLACE',
             style: pw.TextStyle(
-              fontSize: 16,
+              fontSize: 12,
               fontWeight: pw.FontWeight.bold,
               color: color,
             ),

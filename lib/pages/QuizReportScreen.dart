@@ -61,22 +61,73 @@ class _QuizReportScreenState extends State<QuizReportScreen> {
         participants: participants,
       );
 
+      setState(() => isExportingPDF = false);
+
       if (kIsWeb) {
         // Web: File is already downloaded via browser
         _showSuccess('PDF downloaded successfully!');
       } else {
-        // Mobile/Desktop: Share the file
-        await Share.shareXFiles(
-          [XFile(file.path)],
-          subject: 'Quiz Report - ${quizData?['quiz_name']}',
-        );
-        _showSuccess('PDF Report generated successfully!');
+        // Mobile/Desktop: Show options dialog
+        if (!mounted) return;
+        _showPdfOptionsDialog(file);
       }
     } catch (e) {
       _showError('Error generating PDF: $e');
-    } finally {
       setState(() => isExportingPDF = false);
     }
+  }
+
+  Future<void> _showPdfOptionsDialog(File file) async {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('PDF Generated'),
+        content: const Text('Choose an action for the generated PDF report:'),
+        actions: [
+          TextButton.icon(
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                // Open PDF using system default viewer
+                await Share.shareXFiles(
+                  [XFile(file.path)],
+                  subject: 'Quiz Report - ${quizData?['quiz_name']}',
+                );
+              } catch (e) {
+                _showError('Error opening PDF: $e');
+              }
+            },
+            icon: const Icon(Icons.open_in_new),
+            label: const Text('Open'),
+          ),
+          TextButton.icon(
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                // Share PDF
+                await Share.shareXFiles(
+                  [XFile(file.path)],
+                  subject: 'Quiz Report - ${quizData?['quiz_name']}',
+                );
+                _showSuccess('PDF shared successfully!');
+              } catch (e) {
+                _showError('Error sharing PDF: $e');
+              }
+            },
+            icon: const Icon(Icons.share),
+            label: const Text('Share'),
+          ),
+          TextButton.icon(
+            onPressed: () {
+              Navigator.pop(context);
+              _showSuccess('PDF saved to: ${file.path}');
+            },
+            icon: const Icon(Icons.download_done),
+            label: const Text('Done'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _exportToCSV() async {
@@ -153,23 +204,74 @@ class _QuizReportScreenState extends State<QuizReportScreen> {
         html.Url.revokeObjectUrl(url);
         _showSuccess('CSV downloaded successfully!');
       } else {
-        // Mobile/Desktop: Save and share
+        // Mobile/Desktop: Save and show options
         final directory = await getApplicationDocumentsDirectory();
         final path = '${directory.path}/$fileName';
         final file = File(path);
         await file.writeAsString(csv);
 
-        await Share.shareXFiles(
-          [XFile(path)],
-          subject: 'Quiz Report - ${quizData?['quiz_name']}',
-        );
-        _showSuccess('Report exported successfully!');
+        if (mounted) {
+          _showCsvOptionsDialog(file);
+        }
       }
     } catch (e) {
       _showError('Error exporting CSV: $e');
     } finally {
       setState(() => isExportingCSV = false);
     }
+  }
+
+  Future<void> _showCsvOptionsDialog(File file) async {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('CSV Generated'),
+        content: const Text('Choose an action for the generated CSV report:'),
+        actions: [
+          TextButton.icon(
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                // Open CSV using system default viewer
+                await Share.shareXFiles(
+                  [XFile(file.path)],
+                  subject: 'Quiz Report - ${quizData?['quiz_name']}',
+                );
+              } catch (e) {
+                _showError('Error opening CSV: $e');
+              }
+            },
+            icon: const Icon(Icons.open_in_new),
+            label: const Text('Open'),
+          ),
+          TextButton.icon(
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                // Share CSV
+                await Share.shareXFiles(
+                  [XFile(file.path)],
+                  subject: 'Quiz Report - ${quizData?['quiz_name']}',
+                );
+                _showSuccess('CSV shared successfully!');
+              } catch (e) {
+                _showError('Error sharing CSV: $e');
+              }
+            },
+            icon: const Icon(Icons.share),
+            label: const Text('Share'),
+          ),
+          TextButton.icon(
+            onPressed: () {
+              Navigator.pop(context);
+              _showSuccess('CSV saved to: ${file.path}');
+            },
+            icon: const Icon(Icons.download_done),
+            label: const Text('Done'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showError(String message) {

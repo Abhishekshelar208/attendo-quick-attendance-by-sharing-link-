@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:attendo/utils/theme_helper.dart';
+import 'package:attendo/utils/animation_helper.dart';
 import 'package:attendo/widgets/common_widgets.dart';
+import 'package:attendo/widgets/custom_field_widgets.dart';
 import 'package:attendo/services/device_fingerprint_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'FeedbackViewScreen.dart';
 import 'package:lottie/lottie.dart';
+import 'package:attendo/pages/FeedbackThankYouScreen.dart';
+import 'package:attendo/pages/FeedbackSessionEndedScreen.dart';
 
 class StudentFeedbackScreen extends StatefulWidget {
   final String sessionId;
@@ -18,16 +21,17 @@ class StudentFeedbackScreen extends StatefulWidget {
 }
 
 class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _contentController = TextEditingController();
   final DatabaseReference _dbRef = FirebaseDatabase.instance.ref();
+  final Map<String, dynamic> _fieldValues = {};
+  final _formKey = GlobalKey<FormState>();
   
   Map<String, dynamic>? sessionData;
+  List<Map<String, dynamic>> customFields = [];
   bool isLoading = true;
   bool isSubmitting = false;
-  String? alreadySubmittedContent;
-  int characterLimit = 500;
-  bool sessionEnded = false;
+  bool isSessionEnded = false;
+  bool alreadySubmitted = false;
+  String? submittedTimestamp;
 
   @override
   void initState() {
@@ -35,80 +39,47 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
     _checkDeviceAndLoadSession();
   }
 
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _contentController.dispose();
-    super.dispose();
-  }
-
   void _checkDeviceAndLoadSession() async {
     print('📱 Opening feedback session: ${widget.sessionId}');
 
+    // Get device fingerprint
     String deviceId = await DeviceFingerprintService.getFingerprint();
     print('🔐 Device ID: ${deviceId.substring(0, 20)}...');
 
-    await _checkIfDeviceSubmitted(deviceId);
+    // Check if device already submitted
+    await _checkIfDeviceAlreadySubmitted(deviceId);
   }
 
-  Future<void> _checkIfDeviceSubmitted(String deviceId) async {
-    final prefs = await SharedPreferences.getInstance();
-    String storageKey = 'feedback_${widget.sessionId}';
+  Future<void> _checkIfDeviceAlreadySubmitted(String deviceId) async {
+    // First, load session to check if it's ended
+    final sessionSnapshot = await _dbRef.child('feedback_sessions/${widget.sessionId}').get();
     
-    // Check localStorage first
-    String? localSubmission = prefs.getString(storageKey);
-    if (localSubmission != null) {
-      print('💾 Found local submission');
-      
-      // Verify in Firebase
-      final snapshot = await _dbRef
-          .child('feedback_sessions/${widget.sessionId}/submissions')
-          .get();
-
-      bool found = false;
-      String? foundContent;
-      
-      if (snapshot.exists) {
-        final submissionsMap = snapshot.value as Map;
-        for (var submission in submissionsMap.values) {
-          if (submission['device_id'] == deviceId) {
-            found = true;
-            foundContent = submission['content'];
-            break;
-          }
-        }
-      }
-
-      if (found) {
-        print('✅ Device already submitted (verified in Firebase)');
-        
-        // Check if multiple submissions allowed
-        _fetchSessionDetails();
-        
-        if (sessionData != null && sessionData!['allow_multiple_submissions'] == false) {
-          setState(() {
-            alreadySubmittedContent = foundContent;
-            isLoading = false;
-          });
-
-          await Future.delayed(Duration(milliseconds: 1500));
-          if (mounted) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => FeedbackViewScreen(
-                  sessionId: widget.sessionId,
-                  hasSubmitted: true,
-                ),
-              ),
-            );
-          }
-          return;
-        }
-      }
+    if (!sessionSnapshot.exists) {
+      print('⚠️ Session not found!');
+      setState(() => isLoading = false);
+      _showErrorDialog('Session not found or has been deleted.');
+      return;
     }
-
-    // Load session details
+    
+    Map<String, dynamic> sessionData = Map<String, dynamic>.from(sessionSnapshot.value as Map);
+    bool sessionEnded = sessionData['status'] == 'ended';
+    
+    // If session is ended, show ended screen (regardless of submission status)
+    if (sessionEnded) {
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => FeedbackSessionEndedScreen(
+              sessionType: sessionData['type'] ?? 'Q&A',
+              sessionName: sessionData['name'] ?? 'Session',
+            ),
+          ),
+        );
+      }
+      return;
+    }
+    
+    // Session is active, always load form (allow unlimited resubmissions)
     _fetchSessionDetails();
   }
 
@@ -121,17 +92,24 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
       if (snapshot.exists) {
         Map<String, dynamic> data = Map<String, dynamic>.from(snapshot.value as Map);
         
+        // Parse custom fields if they exist
+        if (data.containsKey('custom_fields')) {
+          customFields = List<Map<String, dynamic>>.from(
+            (data['custom_fields'] as List).map((f) => Map<String, dynamic>.from(f))
+          );
+        }
+
+        bool sessionEnded = data['status'] == 'ended';
+        
         setState(() {
           sessionData = data;
-          sessionEnded = data['status'] == 'ended';
-          characterLimit = data['character_limit'] ?? 500;
+          isSessionEnded = sessionEnded;
           isLoading = false;
         });
 
-        print('✅ Session loaded: ${data['title']}');
-        print('   Type: ${data['session_type']}');
-        print('   Collect names: ${data['collect_names']}');
-        print('   Allow multiple: ${data['allow_multiple_submissions']}');
+        print('✅ Session loaded: ${data['name']} (${data['type']})');
+        print('   Custom fields: ${customFields.length}');
+        print('   Session ended: $sessionEnded');
       } else {
         print('⚠️ Session not found!');
         setState(() => isLoading = false);
@@ -148,6 +126,7 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text('Error', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
         content: Text(message, style: GoogleFonts.poppins()),
         actions: [
@@ -156,177 +135,141 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
               Navigator.pop(context);
               Navigator.pop(context);
             },
-            child: Text('OK'),
+            child: const Text('OK'),
           ),
         ],
       ),
     );
   }
 
-  void _submitFeedback() async {
-    if (sessionEnded) {
-      EnhancedSnackBar.show(
-        context,
-        message: 'Session has ended',
-        type: SnackBarType.error,
-      );
+  void _submitResponse() async {
+    if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    bool collectNames = sessionData!['collect_names'] ?? true;
-    String content = _contentController.text.trim();
-    String? studentName = collectNames ? _nameController.text.trim() : null;
-
-    // Validation
-    if (collectNames && (studentName == null || studentName.isEmpty)) {
-      EnhancedSnackBar.show(
-        context,
-        message: 'Please enter your name',
-        type: SnackBarType.error,
-      );
-      return;
-    }
-
-    if (content.isEmpty) {
-      EnhancedSnackBar.show(
-        context,
-        message: 'Please enter your ${sessionData!['session_type'].toLowerCase()}',
-        type: SnackBarType.error,
-      );
-      return;
-    }
-
-    if (sessionData!.containsKey('character_limit') && content.length > sessionData!['character_limit']) {
-      EnhancedSnackBar.show(
-        context,
-        message: 'Content exceeds character limit (${sessionData!['character_limit']})',
-        type: SnackBarType.error,
-      );
-      return;
+    // Validate custom fields
+    print('🔍 Validating custom fields...');
+    for (var field in customFields) {
+      String fieldName = field['name'];
+      bool isRequired = field['required'] ?? false;
+      
+      if (isRequired) {
+        dynamic value = _fieldValues[fieldName];
+        
+        if (value == null || value.toString().trim().isEmpty) {
+          EnhancedSnackBar.show(
+            context,
+            message: 'Please fill in $fieldName',
+            type: SnackBarType.error,
+          );
+          return;
+        }
+      }
     }
 
     setState(() => isSubmitting = true);
 
-    print('✍️ Submitting ${sessionData!['session_type']}...');
+    print('✍️ Submitting response...');
     print('   Session: ${widget.sessionId}');
-    if (collectNames) print('   Name: $studentName');
-    print('   Content length: ${content.length}');
 
     try {
+      // Get device fingerprint
       String deviceId = await DeviceFingerprintService.getFingerprint();
       print('   Device ID: ${deviceId.substring(0, 20)}...');
 
-      // Check if device is blocked
-      final blockedSnapshot = await _dbRef
-          .child('feedback_sessions/${widget.sessionId}/blocked_devices/$deviceId')
-          .get();
-
-      if (blockedSnapshot.exists && blockedSnapshot.value == true) {
-        setState(() => isSubmitting = false);
-        
-        EnhancedSnackBar.show(
-          context,
-          message: 'Your device has been blocked from this session',
-          type: SnackBarType.error,
-        );
-        return;
-      }
-
-      // Check if already submitted (if multiple submissions not allowed)
-      if (sessionData!['allow_multiple_submissions'] == false) {
-        final allSubmissionsSnapshot = await _dbRef
-            .child('feedback_sessions/${widget.sessionId}/submissions')
-            .get();
-        
-        if (allSubmissionsSnapshot.exists) {
-          final submissionsMap = allSubmissionsSnapshot.value as Map;
-          for (var submission in submissionsMap.values) {
-            if (submission['device_id'] == deviceId) {
-              setState(() => isSubmitting = false);
-              
-              EnhancedSnackBar.show(
-                context,
-                message: 'You have already submitted',
-                type: SnackBarType.warning,
-              );
-
-              await Future.delayed(Duration(seconds: 1));
-              if (mounted) {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => FeedbackViewScreen(
-                      sessionId: widget.sessionId,
-                      hasSubmitted: true,
-                    ),
-                  ),
-                );
-              }
-              return;
-            }
-          }
-        }
-      }
-
-      // Submit
-      DatabaseReference submissionRef = _dbRef
-          .child('feedback_sessions/${widget.sessionId}/submissions')
+      // Submit response (allow resubmissions)
+      DatabaseReference responseRef = _dbRef
+          .child('feedback_sessions/${widget.sessionId}/responses')
           .push();
 
-      Map<String, dynamic> submissionData = {
-        'content': content,
+      Map<String, dynamic> responseData = {
         'device_id': deviceId,
         'timestamp': DateTime.now().toIso8601String(),
-        'flagged': false,
+        'field_values': _fieldValues,
       };
 
-      if (collectNames) {
-        submissionData['student_name'] = studentName;
-      }
+      await responseRef.set(responseData);
 
-      await submissionRef.set(submissionData);
-
-      // Store in localStorage
+      // Save to localStorage
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('feedback_${widget.sessionId}', content);
+      await prefs.setString('feedback_submit_${widget.sessionId}', responseData['timestamp']);
 
-      print('✅ Submission successful!');
-
-      setState(() => isSubmitting = false);
-
-      // Navigate to view screen
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => FeedbackViewScreen(
-            sessionId: widget.sessionId,
-            hasSubmitted: true,
-          ),
-        ),
-      );
-    } catch (e) {
-      print('❌ Error submitting: $e');
+      print('✅ Response submitted successfully!');
+      
       setState(() => isSubmitting = false);
       
+      // Navigate to thank you screen
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => FeedbackThankYouScreen(
+              sessionType: sessionData!['type'] ?? 'Q&A',
+              sessionName: sessionData!['name'] ?? 'Session',
+            ),
+          ),
+        );
+      }
+    } catch (e, stackTrace) {
+      print('❌ Error submitting response: $e');
+      print('Stack trace: $stackTrace');
+      setState(() => isSubmitting = false);
+
       EnhancedSnackBar.show(
         context,
-        message: 'Error submitting. Please try again.',
+        message: 'Error submitting response. Please try again.',
         type: SnackBarType.error,
       );
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
       return Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: alreadySubmitted ? ThemeHelper.getBackgroundColor(context) : Colors.white,
         body: Center(
-          child: Lottie.asset(
-            'lib/assets/animations/runningcuteanimation.json',
-            width: 300,
-            height: 300,
-            fit: BoxFit.contain,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (alreadySubmitted) ...[
+                SuccessAnimation(
+                  size: 120,
+                  color: ThemeHelper.getSuccessColor(context),
+                ),
+                const SizedBox(height: 24),
+                FadeInWidget(
+                  delay: const Duration(milliseconds: 400),
+                  child: Text(
+                    'Already Submitted!',
+                    style: GoogleFonts.poppins(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: ThemeHelper.getTextPrimary(context),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                FadeInWidget(
+                  delay: const Duration(milliseconds: 600),
+                  child: Text(
+                    'You have already submitted your response',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      color: ThemeHelper.getTextSecondary(context),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ] else ...[
+                Lottie.asset(
+                  'lib/assets/animations/runningcuteanimation.json',
+                  width: 300,
+                  height: 300,
+                  fit: BoxFit.contain,
+                ),
+              ],
+            ],
           ),
         ),
       );
@@ -335,62 +278,56 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
     if (sessionData == null) {
       return Scaffold(
         backgroundColor: ThemeHelper.getBackgroundColor(context),
-        appBar: AppBar(title: Text('Error')),
-        body: Center(
-          child: Text(
-            'Session not found',
-            style: GoogleFonts.poppins(fontSize: 16),
-          ),
+        body: ErrorStateWidget(
+          title: 'Session Not Found',
+          message: 'This session doesn\'t exist or has been deleted.',
+          icon: Icons.error_outline_rounded,
+          onRetry: () => Navigator.pop(context),
         ),
       );
     }
 
-    if (sessionEnded) {
+    // Check if session has ended
+    if (isSessionEnded) {
       return Scaffold(
         backgroundColor: ThemeHelper.getBackgroundColor(context),
         appBar: AppBar(
-          title: Text(
-            sessionData!['title'],
-            style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
-          ),
+          title: Text('Session Ended', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+          automaticallyImplyLeading: true,
         ),
         body: Center(
           child: Padding(
-            padding: EdgeInsets.all(32),
+            padding: const EdgeInsets.all(32),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  padding: EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.orange, Colors.orange.shade700],
-                    ),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.lock_clock_rounded,
-                    size: 64,
-                    color: Colors.white,
-                  ),
+                Icon(
+                  Icons.block_rounded,
+                  size: 80,
+                  color: ThemeHelper.getErrorColor(context),
                 ),
-                SizedBox(height: 32),
+                const SizedBox(height: 24),
                 Text(
                   'Session Ended',
                   style: GoogleFonts.poppins(
-                    fontSize: 28,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: ThemeHelper.getTextPrimary(context),
                   ),
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 12),
                 Text(
-                  'This session has been closed by the teacher',
+                  'This session has been closed by the teacher. You can no longer submit responses.',
                   style: GoogleFonts.poppins(
                     fontSize: 16,
                     color: ThemeHelper.getTextSecondary(context),
                   ),
                   textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 32),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Go Back'),
                 ),
               ],
             ),
@@ -399,322 +336,222 @@ class _StudentFeedbackScreenState extends State<StudentFeedbackScreen> {
       );
     }
 
-    bool collectNames = sessionData!['collect_names'] ?? true;
-    String sessionType = sessionData!['session_type'];
+    String sessionType = sessionData!['type'] ?? 'Q&A';
+    Color typeColor = sessionType == 'Q&A' ? const Color(0xff3b82f6) : const Color(0xff059669);
+    IconData typeIcon = sessionType == 'Q&A' ? Icons.question_answer_rounded : Icons.rate_review_rounded;
 
     return Scaffold(
       backgroundColor: ThemeHelper.getBackgroundColor(context),
       appBar: AppBar(
-        title: Text(
-          sessionData!['title'],
-          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
-        ),
-        elevation: 0,
-        centerTitle: true,
+        title: Text('$sessionType Session', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
         automaticallyImplyLeading: false,
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Header Icon
-              Center(
-                child: Container(
-                  padding: EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    gradient: ThemeHelper.getPrimaryGradient(context),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: ThemeHelper.getPrimaryColor(context).withValues(alpha: 0.3),
-                        blurRadius: 20,
-                        offset: Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    sessionType == 'Feedback'
-                        ? Icons.rate_review_rounded
-                        : Icons.question_answer_rounded,
-                    size: 56,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              SizedBox(height: 24),
-
-              // Session Info Card
-              Container(
-                padding: EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  gradient: ThemeHelper.getPrimaryGradient(context),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: ThemeHelper.getPrimaryColor(context).withValues(alpha: 0.3),
-                      blurRadius: 15,
-                      offset: Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      sessionData!['title'],
-                      style: GoogleFonts.poppins(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    if (sessionData!['description'].isNotEmpty) ...[
-                      SizedBox(height: 12),
-                      Text(
-                        sessionData!['description'],
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          color: Colors.white,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                    SizedBox(height: 12),
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        '${sessionData!['year']} • ${sessionData!['branch']} • ${sessionData!['division']}',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          color: Colors.white,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              SizedBox(height: 32),
-
-              // Input Card
-              Container(
-                padding: EdgeInsets.all(28),
-                decoration: BoxDecoration(
-                  color: ThemeHelper.getCardColor(context),
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: ThemeHelper.getShadowColor(context),
-                      blurRadius: 20,
-                      offset: Offset(0, 8),
-                    ),
-                  ],
-                ),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Form(
+                key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: ThemeHelper.getPrimaryColor(context).withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(
-                            Icons.edit_rounded,
-                            color: ThemeHelper.getPrimaryColor(context),
-                            size: 24,
-                          ),
-                        ),
-                        SizedBox(width: 12),
-                        Text(
-                          'Your $sessionType',
-                          style: GoogleFonts.poppins(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: ThemeHelper.getTextPrimary(context),
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      collectNames
-                          ? 'Enter your name and $sessionType below'
-                          : 'Submit anonymously',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        color: ThemeHelper.getTextSecondary(context),
-                      ),
-                    ),
-                    SizedBox(height: 28),
-
-                    // Name Field (if required)
-                    if (collectNames) ...[
-                      TextField(
-                        controller: _nameController,
-                        decoration: InputDecoration(
-                          labelText: 'Your Name *',
-                          hintText: 'Enter your full name',
-                          prefixIcon: Icon(
-                            Icons.person_rounded,
-                            color: ThemeHelper.getPrimaryColor(context),
-                          ),
-                          filled: true,
-                          fillColor: ThemeHelper.getPrimaryColor(context).withValues(alpha: 0.05),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide.none,
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide(
-                              color: ThemeHelper.getBorderColor(context),
-                              width: 1.5,
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide(
-                              color: ThemeHelper.getPrimaryColor(context),
-                              width: 2,
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 20),
-                    ],
-
-                    // Content Field
-                    TextField(
-                      controller: _contentController,
-                      maxLines: 6,
-                      maxLength: characterLimit,
-                      decoration: InputDecoration(
-                        labelText: '$sessionType *',
-                        hintText: sessionType == 'Feedback'
-                            ? 'Share your thoughts...'
-                            : 'Ask your question...',
-                        prefixIcon: Padding(
-                          padding: EdgeInsets.only(bottom: 80),
-                          child: Icon(
-                            sessionType == 'Feedback'
-                                ? Icons.message_rounded
-                                : Icons.help_rounded,
-                            color: ThemeHelper.getPrimaryColor(context),
-                          ),
-                        ),
-                        filled: true,
-                        fillColor: ThemeHelper.getPrimaryColor(context).withValues(alpha: 0.05),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide.none,
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(
-                            color: ThemeHelper.getBorderColor(context),
-                            width: 1.5,
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(
-                            color: ThemeHelper.getPrimaryColor(context),
-                            width: 2,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    if (!collectNames) ...[
-                      SizedBox(height: 16),
-                      Container(
-                        padding: EdgeInsets.all(12),
+                    // Session Header Card
+                    SlideInWidget(
+                      delay: const Duration(milliseconds: 100),
+                      child: Container(
+                        padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
-                          color: ThemeHelper.getWarningColor(context).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: ThemeHelper.getWarningColor(context).withValues(alpha: 0.3),
+                          gradient: LinearGradient(
+                            colors: sessionType == 'Q&A' 
+                                ? [const Color(0xff3b82f6), const Color(0xff60a5fa)]
+                                : [const Color(0xff059669), const Color(0xff10b981)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: typeColor.withValues(alpha: 0.3),
+                              blurRadius: 15,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
                         ),
                         child: Row(
                           children: [
-                            Icon(
-                              Icons.info_outline_rounded,
-                              color: ThemeHelper.getWarningColor(context),
-                              size: 20,
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(typeIcon, color: Colors.white, size: 32),
                             ),
-                            SizedBox(width: 12),
+                            const SizedBox(width: 16),
                             Expanded(
-                              child: Text(
-                                'Your submission is anonymous, but device tracking is enabled for safety',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 12,
-                                  color: ThemeHelper.getTextSecondary(context),
-                                ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    sessionData!['name'],
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Please fill in all the details below',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 13,
+                                      color: Colors.white.withValues(alpha: 0.9),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ],
+                    ),
+                    const SizedBox(height: 32),
+
+                    // Custom Fields
+                    if (customFields.isEmpty)
+                      SlideInWidget(
+                        delay: const Duration(milliseconds: 300),
+                        child: Container(
+                          padding: const EdgeInsets.all(32),
+                          decoration: BoxDecoration(
+                            color: ThemeHelper.getCardColor(context),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: ThemeHelper.getBorderColor(context)),
+                          ),
+                          child: Center(
+                            child: Column(
+                              children: [
+                                Icon(
+                                  Icons.info_outline_rounded,
+                                  size: 64,
+                                  color: ThemeHelper.getTextTertiary(context),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'No fields configured',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: ThemeHelper.getTextSecondary(context),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'The teacher hasn\'t added any fields yet',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    color: ThemeHelper.getTextTertiary(context),
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      ...customFields.asMap().entries.map((entry) {
+                        int index = entry.key;
+                        Map<String, dynamic> field = entry.value;
+                        
+                        return SlideInWidget(
+                          delay: Duration(milliseconds: 300 + (index * 100)),
+                          child: Padding(
+                            padding: const EdgeInsets.only(bottom: 20),
+                            child: CustomFieldWidget(
+                              fieldConfig: field,
+                              onValueChanged: (fieldName, value) {
+                                setState(() {
+                                  _fieldValues[fieldName] = value;
+                                });
+                              },
+                            ),
+                          ),
+                        );
+                      }).toList(),
+
+                    const SizedBox(height: 32),
+
+                    // Submit Button
+                    if (customFields.isNotEmpty)
+                      SlideInWidget(
+                        delay: Duration(milliseconds: 400 + (customFields.length * 100)),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: isSubmitting ? null : _submitResponse,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: typeColor,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 18),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              elevation: 4,
+                            ),
+                            child: Text(
+                              'Submit Response',
+                              style: GoogleFonts.poppins(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
+            ),
 
-              SizedBox(height: 32),
-
-              // Submit Button
-              ElevatedButton(
-                onPressed: isSubmitting ? null : _submitFeedback,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: ThemeHelper.getPrimaryColor(context),
-                  foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 4,
-                ),
-                child: isSubmitting
-                    ? SizedBox(
-                        height: 24,
-                        width: 24,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+            // Submitting Overlay
+            if (isSubmitting)
+              Container(
+                color: Colors.black.withValues(alpha: 0.5),
+                child: Center(
+                  child: Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.send_rounded, size: 24),
-                          SizedBox(width: 12),
+                          CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(typeColor),
+                          ),
+                          const SizedBox(height: 20),
                           Text(
-                            'Submit $sessionType',
+                            'Submitting your response...',
                             style: GoogleFonts.poppins(
                               fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
                       ),
+                    ),
+                  ),
+                ),
               ),
-
-              SizedBox(height: 20),
-            ],
-          ),
+          ],
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 }

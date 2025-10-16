@@ -23,6 +23,7 @@ class _StudentQuizEntryScreenState extends State<StudentQuizEntryScreen> {
   QuizSession? quizSession;
   bool isLoading = true;
   bool isJoining = false;
+  bool isQuizEnded = false;
   Map<String, TextEditingController> fieldControllers = {};
 
   @override
@@ -40,14 +41,11 @@ class _StudentQuizEntryScreenState extends State<StudentQuizEntryScreen> {
         final quiz = QuizSession.fromJson(widget.quizId, data);
         
         if (quiz.status == 'ended') {
-          if (mounted) {
-            EnhancedSnackBar.show(
-              context,
-              message: 'This quiz has already ended',
-              type: SnackBarType.error,
-            );
-            Navigator.pop(context);
-          }
+          setState(() {
+            quizSession = quiz;
+            isQuizEnded = true;
+            isLoading = false;
+          });
           return;
         }
 
@@ -167,6 +165,10 @@ class _StudentQuizEntryScreenState extends State<StudentQuizEntryScreen> {
           ),
         ),
       );
+    }
+
+    if (isQuizEnded) {
+      return _buildQuizEndedView();
     }
 
     return Scaffold(
@@ -389,5 +391,256 @@ class _StudentQuizEntryScreenState extends State<StudentQuizEntryScreen> {
     if (name.contains('email')) return Icons.email_rounded;
     if (name.contains('phone')) return Icons.phone_rounded;
     return Icons.input_rounded;
+  }
+
+  Widget _buildQuizEndedView() {
+    final participants = quizSession?.participants.values.toList() ?? [];
+    final sortedParticipants = participants.toList()
+      ..sort((a, b) {
+        final scoreA = a.score ?? 0;
+        final scoreB = b.score ?? 0;
+        return scoreB.compareTo(scoreA);
+      });
+
+    return Scaffold(
+      backgroundColor: ThemeHelper.getBackgroundColor(context),
+      appBar: AppBar(
+        title: Text(
+          'Quiz Ended',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+        ),
+        automaticallyImplyLeading: false,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      ThemeHelper.getWarningColor(context),
+                      ThemeHelper.getWarningColor(context).withValues(alpha: 0.8),
+                    ],
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.lock_clock_rounded,
+                  size: 56,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            const SizedBox(height: 30),
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: ThemeHelper.getWarningColor(context).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: ThemeHelper.getWarningColor(context).withValues(alpha: 0.3),
+                  width: 2,
+                ),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    'Quiz Has Ended',
+                    style: GoogleFonts.poppins(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: ThemeHelper.getTextPrimary(context),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'This quiz has been closed by the teacher',
+                    style: GoogleFonts.poppins(
+                      fontSize: 15,
+                      color: ThemeHelper.getTextSecondary(context),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: ThemeHelper.getCardColor(context),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Quiz Details',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: ThemeHelper.getTextPrimary(context),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  _buildDetailRow2(Icons.quiz_rounded, 'Quiz', quizSession!.quizName),
+                  const SizedBox(height: 16),
+                  _buildDetailRow2(Icons.help_outline_rounded, 'Questions', '${quizSession!.questions.length}'),
+                  const SizedBox(height: 16),
+                  _buildDetailRow2(Icons.people_rounded, 'Participants', '${participants.length}'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            if (quizSession?.showLeaderboard ?? true) ...[
+              Text(
+                'Final Leaderboard',
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: ThemeHelper.getTextPrimary(context),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: ThemeHelper.getCardColor(context),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: ThemeHelper.getBorderColor(context)),
+                ),
+                child: sortedParticipants.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Center(
+                          child: Text(
+                            'No participants',
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              color: ThemeHelper.getTextSecondary(context),
+                            ),
+                          ),
+                        ),
+                      )
+                    : ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: sortedParticipants.length,
+                        separatorBuilder: (_, __) => Divider(height: 1, color: ThemeHelper.getBorderColor(context)),
+                        itemBuilder: (context, index) {
+                          final participant = sortedParticipants[index];
+                          final name = participant.customFieldValues['Name'] ?? 'Student';
+                          final score = participant.score ?? 0;
+
+                          return Container(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: Colors.purple.withValues(alpha: 0.1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      '${index + 1}',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.purple,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Text(
+                                    name,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: ThemeHelper.getTextPrimary(context),
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  '$score/${quizSession!.questions.length}',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.purple,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ] else ...[
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: ThemeHelper.getCardColor(context),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: ThemeHelper.getBorderColor(context)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.lock_rounded,
+                      color: ThemeHelper.getTextSecondary(context),
+                      size: 40,
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        'The teacher has kept the results private.',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          color: ThemeHelper.getTextSecondary(context),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow2(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: ThemeHelper.getPrimaryColor(context)),
+        const SizedBox(width: 12),
+        Text(
+          '$label: ',
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: ThemeHelper.getTextSecondary(context),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: ThemeHelper.getTextPrimary(context),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }

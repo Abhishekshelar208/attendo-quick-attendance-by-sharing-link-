@@ -26,6 +26,7 @@ class _StudentQuizScreenState extends State<StudentQuizScreen> {
   QuizSession? quizSession;
   int currentQuestionIndex = 0;
   List<int> selectedAnswers = [];
+  List<int> questionOrder = []; // Shuffled order of questions
   bool isLoading = true;
   bool isSubmitting = false;
 
@@ -50,16 +51,35 @@ class _StudentQuizScreenState extends State<StudentQuizScreen> {
             .get();
         
         List<int> answers = List.filled(quiz.questions.length, -1);
+        List<int> shuffledOrder = List.generate(quiz.questions.length, (index) => index);
+        
         if (participantSnapshot.exists) {
           final participantData = Map<String, dynamic>.from(participantSnapshot.value as Map);
           if (participantData['answers'] != null) {
             answers = List<int>.from(participantData['answers']);
           }
+          // Load saved question order if exists
+          if (participantData['question_order'] != null) {
+            shuffledOrder = List<int>.from(participantData['question_order']);
+          } else {
+            // First time: shuffle and save
+            shuffledOrder.shuffle();
+            await _dbRef
+                .child('quiz_sessions/${widget.quizId}/participants/${widget.participantId}/question_order')
+                .set(shuffledOrder);
+          }
+        } else {
+          // First time: shuffle and save
+          shuffledOrder.shuffle();
+          await _dbRef
+              .child('quiz_sessions/${widget.quizId}/participants/${widget.participantId}/question_order')
+              .set(shuffledOrder);
         }
 
         setState(() {
           quizSession = quiz;
           selectedAnswers = answers;
+          questionOrder = shuffledOrder;
           isLoading = false;
         });
       }
@@ -84,8 +104,9 @@ class _StudentQuizScreenState extends State<StudentQuizScreen> {
   }
 
   Future<void> _selectAnswer(int answerIndex) async {
+    final actualQuestionIndex = questionOrder[currentQuestionIndex];
     setState(() {
-      selectedAnswers[currentQuestionIndex] = answerIndex;
+      selectedAnswers[actualQuestionIndex] = answerIndex;
     });
 
     // Save answer to Firebase immediately
@@ -225,7 +246,8 @@ class _StudentQuizScreenState extends State<StudentQuizScreen> {
       );
     }
 
-    final currentQuestion = quizSession!.questions[currentQuestionIndex];
+    final actualQuestionIndex = questionOrder[currentQuestionIndex];
+    final currentQuestion = quizSession!.questions[actualQuestionIndex];
     final totalQuestions = quizSession!.questions.length;
     final progress = (currentQuestionIndex + 1) / totalQuestions;
 
@@ -349,7 +371,7 @@ class _StudentQuizScreenState extends State<StudentQuizScreen> {
                           ...currentQuestion.options.asMap().entries.map((entry) {
                             int optionIndex = entry.key;
                             String option = entry.value;
-                            bool isSelected = selectedAnswers[currentQuestionIndex] == optionIndex;
+                            bool isSelected = selectedAnswers[actualQuestionIndex] == optionIndex;
 
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 12),
@@ -446,7 +468,7 @@ class _StudentQuizScreenState extends State<StudentQuizScreen> {
                         Expanded(
                           flex: 2,
                           child: ElevatedButton.icon(
-                            onPressed: selectedAnswers[currentQuestionIndex] != -1
+                            onPressed: selectedAnswers[actualQuestionIndex] != -1
                                 ? _nextQuestion
                                 : null,
                             icon: Icon(

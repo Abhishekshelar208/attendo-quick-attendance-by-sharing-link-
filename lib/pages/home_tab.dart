@@ -395,18 +395,18 @@ class HomeTab extends StatelessWidget {
                     page: const CreateQuizScreen(),
                   ),
                 );
-              } else if (label.contains('Q&A') || label.contains('Feedback')) {
-                Navigator.push(
-                  context,
-                  SmoothPageRoute(
-                    page: CreateFeedbackScreen(),
-                  ),
-                );
               } else if (label.contains('Instant Data')) {
                 Navigator.push(
                   context,
                   SmoothPageRoute(
                     page: const CreateInstantDataCollectionScreen(),
+                  ),
+                );
+              } else if (label.contains('Q&A') || label.contains('Feedback')) {
+                Navigator.push(
+                  context,
+                  SmoothPageRoute(
+                    page: const CreateFeedbackScreen(),
                   ),
                 );
               }

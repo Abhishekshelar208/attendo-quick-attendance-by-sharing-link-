@@ -26,8 +26,10 @@ class _StudentEventCheckInScreenState extends State<StudentEventCheckInScreen> {
   Map<String, dynamic>? eventData;
   bool isLoading = true;
   bool isSubmitting = false;
+  bool isEventEnded = false;
   String? alreadyMarkedEntry;
   List<Map<String, dynamic>> customFields = [];
+  List<Map<String, dynamic>> participants = [];
 
   @override
   void initState() {
@@ -118,14 +120,29 @@ class _StudentEventCheckInScreenState extends State<StudentEventCheckInScreen> {
             (data['custom_fields'] as List).map((f) => Map<String, dynamic>.from(f))
           );
         }
+
+        // Load participants if event ended
+        bool eventEnded = data['status'] == 'ended';
+        if (eventEnded && data.containsKey('participants')) {
+          Map<dynamic, dynamic> participantsMap = data['participants'] as Map<dynamic, dynamic>;
+          List<Map<String, dynamic>> loadedParticipants = [];
+          participantsMap.forEach((key, value) {
+            Map<String, dynamic> participant = Map<String, dynamic>.from(value as Map);
+            participant['id'] = key;
+            loadedParticipants.add(participant);
+          });
+          participants = loadedParticipants;
+        }
         
         setState(() {
           eventData = data;
+          isEventEnded = eventEnded;
           isLoading = false;
         });
 
         print('✅ Event loaded: ${data['event_name']} (${data['input_type']})');
         print('   Custom fields: ${customFields.length}');
+        print('   Event ended: $eventEnded');
 
         // Don't show dialog - the UI will handle ended state
       } else {

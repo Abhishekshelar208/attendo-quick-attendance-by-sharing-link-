@@ -152,22 +152,25 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        'Rank ${currentParticipant?['rank'] ?? 0} of ${participants.length}',
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                    // Only show rank if leaderboard is visible
+                    if (quizSession?.showLeaderboard ?? true) ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          'Rank ${currentParticipant?['rank'] ?? 0} of ${participants.length}',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
@@ -415,24 +418,6 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
               ),
               const SizedBox(height: 12),
 
-              // Exit Button
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: OutlinedButton(
-                  onPressed: () {
-                    Navigator.of(context).popUntil((route) => route.isFirst);
-                  },
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: ThemeHelper.getPrimaryColor(context), width: 2),
-                    foregroundColor: ThemeHelper.getPrimaryColor(context),
-                  ),
-                  child: Text(
-                    'Back to Home',
-                    style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ),
             ],
           ),
         ),
