@@ -98,7 +98,7 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
       return Scaffold(
         backgroundColor: ThemeHelper.getBackgroundColor(context),
         body: Center(
-          child: CircularProgressIndicator(color: Colors.purple),
+          child: CircularProgressIndicator(color: const Color(0xff8b5cf6)),
         ),
       );
     }
@@ -122,7 +122,7 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Colors.purple, Colors.deepPurple],
+                    colors: [const Color(0xff8b5cf6), const Color(0xff8b5cf6)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -181,7 +181,7 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                 // Leaderboard Title
                 Row(
                   children: [
-                    const Icon(Icons.leaderboard_rounded, color: Colors.purple),
+                    const Icon(Icons.leaderboard_rounded, color: const Color(0xff8b5cf6)),
                     const SizedBox(width: 12),
                     Text(
                       'Leaderboard',
@@ -242,7 +242,7 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
 
                       return Container(
                         color: isCurrentUser
-                            ? Colors.purple.withValues(alpha: 0.1)
+                            ? const Color(0xff8b5cf6).withValues(alpha: 0.1)
                             : Colors.transparent,
                         padding: const EdgeInsets.all(16),
                         child: Row(
@@ -288,7 +288,7 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                           decoration: BoxDecoration(
-                                            color: Colors.purple,
+                                            color: const Color(0xff8b5cf6),
                                             borderRadius: BorderRadius.circular(4),
                                           ),
                                           child: Text(
@@ -324,7 +324,7 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                                   style: GoogleFonts.poppins(
                                     fontSize: 24,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.purple,
+                                    color: const Color(0xff8b5cf6),
                                   ),
                                 ),
                                 Text(
@@ -406,7 +406,7 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.purple,
+                    backgroundColor: const Color(0xff8b5cf6),
                     foregroundColor: Colors.white,
                   ),
                   icon: const Icon(Icons.visibility_rounded),
@@ -466,11 +466,11 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: isCurrentUser
-                  ? Colors.purple.withValues(alpha: 0.2)
+                  ? const Color(0xff8b5cf6).withValues(alpha: 0.2)
                   : ThemeHelper.getCardColor(context),
               borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
               border: Border.all(
-                color: isCurrentUser ? Colors.purple : ThemeHelper.getBorderColor(context),
+                color: isCurrentUser ? const Color(0xff8b5cf6) : ThemeHelper.getBorderColor(context),
                 width: isCurrentUser ? 2 : 1,
               ),
             ),
@@ -494,7 +494,7 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.purple,
+                    color: const Color(0xff8b5cf6),
                   ),
                 ),
                 if (isCurrentUser) ...[
@@ -504,7 +504,7 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
-                      color: Colors.purple,
+                      color: const Color(0xff8b5cf6),
                     ),
                   ),
                 ],

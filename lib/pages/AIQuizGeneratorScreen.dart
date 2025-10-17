@@ -318,7 +318,7 @@ Rules:
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [Colors.purple, Colors.deepPurple],
+                          colors: [const Color(0xff8b5cf6), const Color(0xff8b5cf6)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
@@ -467,7 +467,7 @@ Rules:
                             style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
                           ),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.purple,
+                            backgroundColor: const Color(0xff8b5cf6),
                           ),
                         ),
                       ),
@@ -516,7 +516,7 @@ Rules:
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: Colors.purple,
+                                        color: const Color(0xff8b5cf6),
                                         borderRadius: BorderRadius.circular(6),
                                       ),
                                       child: Text(
@@ -622,7 +622,7 @@ Rules:
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        CircularProgressIndicator(color: Colors.purple),
+                        CircularProgressIndicator(color: const Color(0xff8b5cf6)),
                         const SizedBox(height: 16),
                         Text(
                           'AI is generating questions...',

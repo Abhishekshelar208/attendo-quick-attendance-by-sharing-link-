@@ -464,15 +464,11 @@ class _StudentEventCheckInScreenState extends State<StudentEventCheckInScreen> {
                 child: Container(
                 padding: EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFFEC4899), Color(0xFFF472B6)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                  gradient: ThemeHelper.getPrimaryGradient(context),
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: Color(0xFFEC4899).withValues(alpha: 0.3),
+                      color: ThemeHelper.getPrimaryColor(context).withValues(alpha: 0.3),
                       blurRadius: 15,
                       offset: Offset(0, 8),
                     ),

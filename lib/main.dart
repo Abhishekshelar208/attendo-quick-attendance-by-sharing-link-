@@ -10,9 +10,8 @@ import 'package:attendo/pages/home_screen_with_nav.dart';
 import 'package:attendo/pages/intro_screen.dart';
 import 'package:attendo/pages/LoginScreen.dart';
 import 'package:attendo/services/auth_service.dart';
-import 'package:attendo/screens/instant_data_collection/create_instant_data_collection_screen.dart';
-import 'package:attendo/screens/instant_data_collection/share_instant_data_collection_screen.dart';
-import 'package:attendo/screens/instant_data_collection/student_instant_data_collection_screen.dart';
+import 'package:attendo/pages/ShareInstantDataScreen.dart';
+import 'package:attendo/pages/StudentInstantDataScreen.dart';
 
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -215,20 +214,30 @@ class MyApp extends StatelessWidget {
           String sessionId = uri.pathSegments[1];
           print('📊 Opening instant data collection: $sessionId');
           return MaterialPageRoute(
-            builder: (context) => StudentInstantDataCollectionScreen(sessionId: sessionId),
+            builder: (context) => StudentInstantDataScreen(sessionId: sessionId),
           );
         }
         
-        // Check for instant data collection share route (for teachers)
-        if (uri.pathSegments.length >= 2 && uri.pathSegments[0] == 'instant-data-collection' && uri.pathSegments[1] == 'share') {
-          if (settings.arguments != null && settings.arguments is String) {
-            String sessionId = settings.arguments as String;
-            print('📤 Opening instant data collection share: $sessionId');
-            return MaterialPageRoute(
-              builder: (context) => ShareInstantDataCollectionScreen(sessionId: sessionId),
-            );
-          }
-        }
+        // Instant Data Collection - Feature disabled (coming soon)
+        // Check for instant data collection route
+        // if (uri.pathSegments.length >= 2 && uri.pathSegments[0] == 'instant-data') {
+        //   String sessionId = uri.pathSegments[1];
+        //   print('📊 Opening instant data collection: $sessionId');
+        //   return MaterialPageRoute(
+        //     builder: (context) => StudentInstantDataCollectionScreen(sessionId: sessionId),
+        //   );
+        // }
+        // 
+        // // Check for instant data collection share route (for teachers)
+        // if (uri.pathSegments.length >= 2 && uri.pathSegments[0] == 'instant-data-collection' && uri.pathSegments[1] == 'share') {
+        //   if (settings.arguments != null && settings.arguments is String) {
+        //     String sessionId = settings.arguments as String;
+        //     print('📤 Opening instant data collection share: $sessionId');
+        //     return MaterialPageRoute(
+        //       builder: (context) => ShareInstantDataCollectionScreen(sessionId: sessionId),
+        //     );
+        //   }
+        // }
         
         // Check for feedback session route (students)
         if (uri.pathSegments.length >= 2 && uri.pathSegments[0] == 'feedback') {
@@ -390,6 +399,29 @@ class _SplashCheckerState extends State<SplashChecker> {
               context,
               MaterialPageRoute(
                 builder: (context) => StudentFeedbackScreen(sessionId: sessionId!),
+              ),
+            );
+            return;
+          }
+        }
+      }
+      
+      // Check for instant data collection in hash fragment
+      if (currentUrl.contains('#/instant-data/')) {
+        final hashPart = Uri.base.fragment;
+        print('🔗 Hash fragment: $hashPart');
+        
+        // Extract session ID from #/instant-data/XXXXX
+        final match = RegExp(r'#/instant-data/([^/]+)').firstMatch(currentUrl);
+        if (match != null) {
+          final sessionId = match.group(1);
+          print('✅ Found instant data session ID: $sessionId');
+          
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => StudentInstantDataScreen(sessionId: sessionId!),
               ),
             );
             return;

@@ -336,7 +336,7 @@ class _QuizReportScreenState extends State<QuizReportScreen> {
       return Scaffold(
         appBar: AppBar(
           title: const Text('Quiz Report'),
-          backgroundColor: Colors.deepPurple,
+          backgroundColor: const Color(0xff8b5cf6),
         ),
         body: const Center(child: CircularProgressIndicator()),
       );
@@ -352,7 +352,7 @@ class _QuizReportScreenState extends State<QuizReportScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Quiz Report'),
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: const Color(0xff8b5cf6),
         actions: [
           if (!isExportingPDF)
             IconButton(
@@ -457,7 +457,7 @@ class _QuizReportScreenState extends State<QuizReportScreen> {
                 childAspectRatio: 1.5,
                 children: [
                   _buildStatCard('Total Participants', totalParticipants.toString(), Icons.people, Colors.blue),
-                  _buildStatCard('Total Questions', totalQuestions.toString(), Icons.quiz, Colors.deepPurple),
+                  _buildStatCard('Total Questions', totalQuestions.toString(), Icons.quiz, const Color(0xff8b5cf6)),
                   _buildStatCard('Average Score', averageScore.toStringAsFixed(1), Icons.bar_chart, Colors.orange),
                   _buildStatCard('Average %', '${averagePercentage.toStringAsFixed(1)}%', Icons.percent, Colors.green),
                   _buildStatCard('Highest Score', '$highestScore/$totalQuestions', Icons.arrow_upward, Colors.green),
@@ -674,7 +674,7 @@ class _QuizReportScreenState extends State<QuizReportScreen> {
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.deepPurple,
+                    color: const Color(0xff8b5cf6),
                   ),
                 ),
                 Text(

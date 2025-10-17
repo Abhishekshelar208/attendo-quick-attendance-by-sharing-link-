@@ -39,7 +39,7 @@ class _CreateAttendanceScreenState extends State<CreateAttendanceScreen> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: ColorScheme.light(
-              primary: Color(0xFF6366F1),
+              primary: Color(0xff2563eb),
               onPrimary: Colors.white,
               surface: Colors.white,
               onSurface: Color(0xFF1E293B),
@@ -62,7 +62,7 @@ class _CreateAttendanceScreenState extends State<CreateAttendanceScreen> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: ColorScheme.light(
-              primary: Color(0xFF6366F1),
+              primary: Color(0xff2563eb),
               onPrimary: Colors.white,
               surface: Colors.white,
               onSurface: Color(0xFF1E293B),
@@ -110,7 +110,7 @@ class _CreateAttendanceScreenState extends State<CreateAttendanceScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6366F1)),
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xff2563eb)),
                 ),
                 SizedBox(height: 16),
                 Text(

@@ -147,7 +147,7 @@ class _TeacherQuizDashboardState extends State<TeacherQuizDashboard> {
       return Scaffold(
         appBar: AppBar(
           title: const Text('Quiz Dashboard'),
-          backgroundColor: Colors.deepPurple,
+          backgroundColor: const Color(0xff8b5cf6),
         ),
         body: const Center(child: CircularProgressIndicator()),
       );
@@ -162,7 +162,7 @@ class _TeacherQuizDashboardState extends State<TeacherQuizDashboard> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Quiz Dashboard'),
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: const Color(0xff8b5cf6),
         actions: [
           IconButton(
             icon: const Icon(Icons.assessment),
@@ -249,7 +249,7 @@ class _TeacherQuizDashboardState extends State<TeacherQuizDashboard> {
                       'Questions',
                       totalQuestions.toString(),
                       Icons.quiz,
-                      Colors.deepPurple,
+                      const Color(0xff8b5cf6),
                     ),
                   ),
                 ],
@@ -488,7 +488,7 @@ class _TeacherQuizDashboardState extends State<TeacherQuizDashboard> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.deepPurple.withOpacity(0.1),
+                      color: const Color(0xff8b5cf6).withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Column(
@@ -497,13 +497,13 @@ class _TeacherQuizDashboardState extends State<TeacherQuizDashboard> {
                           '$score/$totalQuestions',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: Colors.deepPurple,
+                            color: const Color(0xff8b5cf6),
                           ),
                         ),
                         if (rank != null)
                           Text(
                             'Rank #$rank',
-                            style: const TextStyle(fontSize: 10, color: Colors.deepPurple),
+                            style: const TextStyle(fontSize: 10, color: const Color(0xff8b5cf6)),
                           ),
                       ],
                     ),

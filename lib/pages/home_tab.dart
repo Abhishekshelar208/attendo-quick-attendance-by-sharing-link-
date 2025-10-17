@@ -4,13 +4,119 @@ import 'package:attendo/pages/CreateAttendanceScreen.dart';
 import 'package:attendo/pages/CreateEventScreen.dart';
 import 'package:attendo/pages/CreateQuizScreen.dart';
 import 'package:attendo/pages/CreateFeedbackScreen.dart';
-import 'package:attendo/screens/instant_data_collection/create_instant_data_collection_screen.dart';
+import 'package:attendo/pages/CreateInstantDataCollectionScreen.dart';
+import 'package:attendo/pages/NotificationsScreen.dart';
 import 'package:attendo/utils/theme_helper.dart';
 import 'package:attendo/utils/animation_helper.dart';
 import 'package:attendo/widgets/common_widgets.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-class HomeTab extends StatelessWidget {
+class HomeTab extends StatefulWidget {
   const HomeTab({super.key});
+
+  @override
+  State<HomeTab> createState() => _HomeTabState();
+}
+
+class _HomeTabState extends State<HomeTab> {
+
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final DatabaseReference _dbRef = FirebaseDatabase.instance.ref();
+  
+  int totalSessions = 0;
+  int totalParticipants = 0;
+  bool isLoadingStats = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStats();
+  }
+
+  Future<void> _loadStats() async {
+    try {
+      final currentUser = _auth.currentUser;
+      if (currentUser == null) return;
+
+      int sessionCount = 0;
+      int participantCount = 0;
+
+      // Count attendance sessions
+      final attendanceSnapshot = await _dbRef.child('attendance_sessions').get();
+      if (attendanceSnapshot.exists) {
+        final data = attendanceSnapshot.value as Map<dynamic, dynamic>;
+        data.forEach((key, value) {
+          final session = Map<String, dynamic>.from(value as Map);
+          if (session['creator_uid'] == currentUser.uid) {
+            sessionCount++;
+            participantCount += (session['students'] as Map?)?.length ?? 0;
+          }
+        });
+      }
+
+      // Count event sessions
+      final eventsSnapshot = await _dbRef.child('event_sessions').get();
+      if (eventsSnapshot.exists) {
+        final data = eventsSnapshot.value as Map<dynamic, dynamic>;
+        data.forEach((key, value) {
+          final session = Map<String, dynamic>.from(value as Map);
+          if (session['creator_uid'] == currentUser.uid) {
+            sessionCount++;
+            participantCount += (session['participants'] as Map?)?.length ?? 0;
+          }
+        });
+      }
+
+      // Count quiz sessions
+      final quizSnapshot = await _dbRef.child('quiz_sessions').get();
+      if (quizSnapshot.exists) {
+        final data = quizSnapshot.value as Map<dynamic, dynamic>;
+        data.forEach((key, value) {
+          final session = Map<String, dynamic>.from(value as Map);
+          if (session['creator_uid'] == currentUser.uid) {
+            sessionCount++;
+            participantCount += (session['participants'] as Map?)?.length ?? 0;
+          }
+        });
+      }
+
+      // Count feedback sessions
+      final feedbackSnapshot = await _dbRef.child('feedback_sessions').get();
+      if (feedbackSnapshot.exists) {
+        final data = feedbackSnapshot.value as Map<dynamic, dynamic>;
+        data.forEach((key, value) {
+          final session = Map<String, dynamic>.from(value as Map);
+          if (session['creator_uid'] == currentUser.uid) {
+            sessionCount++;
+            participantCount += (session['responses'] as Map?)?.length ?? 0;
+          }
+        });
+      }
+
+      // Count instant data sessions
+      final instantDataSnapshot = await _dbRef.child('instant_data_collection').get();
+      if (instantDataSnapshot.exists) {
+        final data = instantDataSnapshot.value as Map<dynamic, dynamic>;
+        data.forEach((key, value) {
+          final session = Map<String, dynamic>.from(value as Map);
+          if (session['creator_uid'] == currentUser.uid) {
+            sessionCount++;
+            participantCount += (session['responses'] as Map?)?.length ?? 0;
+          }
+        });
+      }
+
+      setState(() {
+        totalSessions = sessionCount;
+        totalParticipants = participantCount;
+        isLoadingStats = false;
+      });
+    } catch (e) {
+      print('Error loading stats: $e');
+      setState(() => isLoadingStats = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +130,12 @@ class HomeTab extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.notifications_rounded),
             onPressed: () {
-              // TODO: Implement notifications
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const NotificationsScreen(),
+                ),
+              );
             },
           ),
         ],
@@ -178,7 +289,7 @@ class HomeTab extends StatelessWidget {
               context,
               icon: Icons.event_rounded,
               label: 'Total Sessions',
-              value: '0',
+              value: isLoadingStats ? '...' : totalSessions.toString(),
               color: ThemeHelper.getPrimaryColor(context),
             ),
           ),
@@ -191,8 +302,8 @@ class HomeTab extends StatelessWidget {
             child: _buildStatCard(
               context,
               icon: Icons.people_rounded,
-              label: 'Students',
-              value: '0',
+              label: 'Participants',
+              value: isLoadingStats ? '...' : totalParticipants.toString(),
               color: ThemeHelper.getSuccessColor(context),
             ),
           ),

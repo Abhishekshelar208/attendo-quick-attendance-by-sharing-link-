@@ -192,7 +192,7 @@ class _StudentQuizEntryScreenState extends State<StudentQuizEntryScreen> {
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Colors.purple, Colors.deepPurple],
+                      colors: [const Color(0xff8b5cf6), const Color(0xff8b5cf6)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -327,7 +327,7 @@ class _StudentQuizEntryScreenState extends State<StudentQuizEntryScreen> {
                   child: ElevatedButton(
                     onPressed: isJoining ? null : _joinQuiz,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.purple,
+                      backgroundColor: const Color(0xff8b5cf6),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -543,7 +543,7 @@ class _StudentQuizEntryScreenState extends State<StudentQuizEntryScreen> {
                                   width: 40,
                                   height: 40,
                                   decoration: BoxDecoration(
-                                    color: Colors.purple.withValues(alpha: 0.1),
+                                    color: const Color(0xff8b5cf6).withValues(alpha: 0.1),
                                     shape: BoxShape.circle,
                                   ),
                                   child: Center(
@@ -552,7 +552,7 @@ class _StudentQuizEntryScreenState extends State<StudentQuizEntryScreen> {
                                       style: GoogleFonts.poppins(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
-                                        color: Colors.purple,
+                                        color: const Color(0xff8b5cf6),
                                       ),
                                     ),
                                   ),
@@ -573,7 +573,7 @@ class _StudentQuizEntryScreenState extends State<StudentQuizEntryScreen> {
                                   style: GoogleFonts.poppins(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.purple,
+                                    color: const Color(0xff8b5cf6),
                                   ),
                                 ),
                               ],

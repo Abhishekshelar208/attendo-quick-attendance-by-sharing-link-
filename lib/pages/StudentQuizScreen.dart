@@ -157,7 +157,7 @@ class _StudentQuizScreenState extends State<StudentQuizScreen> {
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(context, true),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.purple),
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xff8b5cf6)),
               child: Text('Submit', style: GoogleFonts.poppins()),
             ),
           ],
@@ -227,7 +227,7 @@ class _StudentQuizScreenState extends State<StudentQuizScreen> {
               Navigator.pop(context);
               _submitQuiz();
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.purple),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xff8b5cf6)),
             child: Text('OK', style: GoogleFonts.poppins()),
           ),
         ],
@@ -241,7 +241,7 @@ class _StudentQuizScreenState extends State<StudentQuizScreen> {
       return Scaffold(
         backgroundColor: ThemeHelper.getBackgroundColor(context),
         body: Center(
-          child: CircularProgressIndicator(color: Colors.purple),
+          child: CircularProgressIndicator(color: const Color(0xff8b5cf6)),
         ),
       );
     }
@@ -288,7 +288,7 @@ class _StudentQuizScreenState extends State<StudentQuizScreen> {
             child: LinearProgressIndicator(
               value: progress,
               backgroundColor: Colors.grey[300],
-              valueColor: const AlwaysStoppedAnimation<Color>(Colors.purple),
+              valueColor: const AlwaysStoppedAnimation<Color>(const Color(0xff8b5cf6)),
             ),
           ),
         ),
@@ -300,7 +300,7 @@ class _StudentQuizScreenState extends State<StudentQuizScreen> {
                   // Question Counter
                   Container(
                     padding: const EdgeInsets.all(16),
-                    color: Colors.purple.withValues(alpha: 0.1),
+                    color: const Color(0xff8b5cf6).withValues(alpha: 0.1),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -309,13 +309,13 @@ class _StudentQuizScreenState extends State<StudentQuizScreen> {
                           style: GoogleFonts.poppins(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: Colors.purple,
+                            color: const Color(0xff8b5cf6),
                           ),
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
-                            color: Colors.purple,
+                            color: const Color(0xff8b5cf6),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
@@ -344,7 +344,7 @@ class _StudentQuizScreenState extends State<StudentQuizScreen> {
                             decoration: BoxDecoration(
                               color: ThemeHelper.getCardColor(context),
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: Colors.purple, width: 2),
+                              border: Border.all(color: const Color(0xff8b5cf6), width: 2),
                             ),
                             child: Text(
                               currentQuestion.question,
@@ -382,11 +382,11 @@ class _StudentQuizScreenState extends State<StudentQuizScreen> {
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
                                     color: isSelected
-                                        ? Colors.purple.withValues(alpha: 0.1)
+                                        ? const Color(0xff8b5cf6).withValues(alpha: 0.1)
                                         : ThemeHelper.getCardColor(context),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                      color: isSelected ? Colors.purple : ThemeHelper.getBorderColor(context),
+                                      color: isSelected ? const Color(0xff8b5cf6) : ThemeHelper.getBorderColor(context),
                                       width: isSelected ? 2 : 1,
                                     ),
                                   ),
@@ -397,9 +397,9 @@ class _StudentQuizScreenState extends State<StudentQuizScreen> {
                                         height: 32,
                                         decoration: BoxDecoration(
                                           shape: BoxShape.circle,
-                                          color: isSelected ? Colors.purple : Colors.transparent,
+                                          color: isSelected ? const Color(0xff8b5cf6) : Colors.transparent,
                                           border: Border.all(
-                                            color: isSelected ? Colors.purple : Colors.grey,
+                                            color: isSelected ? const Color(0xff8b5cf6) : Colors.grey,
                                             width: 2,
                                           ),
                                         ),
@@ -460,7 +460,7 @@ class _StudentQuizScreenState extends State<StudentQuizScreen> {
                               label: Text('Previous', style: GoogleFonts.poppins()),
                               style: OutlinedButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(vertical: 16),
-                                side: const BorderSide(color: Colors.purple, width: 2),
+                                side: const BorderSide(color: const Color(0xff8b5cf6), width: 2),
                               ),
                             ),
                           ),
@@ -481,7 +481,7 @@ class _StudentQuizScreenState extends State<StudentQuizScreen> {
                               style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
                             ),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.purple,
+                              backgroundColor: const Color(0xff8b5cf6),
                               padding: const EdgeInsets.symmetric(vertical: 16),
                             ),
                           ),
@@ -504,7 +504,7 @@ class _StudentQuizScreenState extends State<StudentQuizScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const CircularProgressIndicator(color: Colors.purple),
+                          const CircularProgressIndicator(color: const Color(0xff8b5cf6)),
                           const SizedBox(height: 16),
                           Text(
                             'Submitting quiz...',
